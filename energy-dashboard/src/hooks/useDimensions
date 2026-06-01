@@ -1,0 +1,35 @@
+import { useState, useEffect, useRef } from 'react';
+
+/**
+ * Custom hook that tracks the dimensions of a DOM element using ResizeObserver.
+ * Returns a [ref, { width, height }] tuple.
+ *
+ * Usage:
+ *   const [ref, { width, height }] = useDimensions();
+ *   return <div ref={ref}>Content is {width}×{height}</div>;
+ */
+export function useDimensions() {
+  const ref = useRef(null);
+  const [dimensions, setDimensions] = useState({ width: 0, height: 0 });
+
+  useEffect(() => {
+    const element = ref.current;
+    if (!element) return;
+
+    const observer = new ResizeObserver((entries) => {
+      for (const entry of entries) {
+        const { width, height } = entry.contentRect;
+        setDimensions({
+          width: Math.floor(width),
+          height: Math.floor(height),
+        });
+      }
+    });
+
+    observer.observe(element);
+
+    return () => observer.disconnect();
+  }, []);
+
+  return [ref, dimensions];
+}
