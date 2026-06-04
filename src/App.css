@@ -7,6 +7,12 @@
   padding: 0;
 }
 
+html,
+body,
+#root {
+  height: 100%;
+}
+
 :root {
   --bg-primary: #0f1729;
   --bg-card: #1a2332;
@@ -20,7 +26,12 @@
 body {
   background: var(--bg-primary);
   color: var(--text-primary);
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-family:
+    "Inter",
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    sans-serif;
   line-height: 1.5;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
@@ -86,7 +97,8 @@ body {
   padding: 1rem;
   display: flex;
   flex-direction: column;
-  min-height: 440px;
+  height: 440px;
+  overflow: hidden;
 }
 
 .chart-header {
@@ -95,6 +107,7 @@ body {
   align-items: flex-start;
   gap: 0.75rem;
   margin-bottom: 0.5rem;
+  flex-shrink: 0;
   flex-wrap: wrap;
 }
 
@@ -116,8 +129,22 @@ body {
 /* ===== Chart Container (measured by useDimensions) ===== */
 .chart-container {
   flex: 1;
-  min-height: 280px;
   position: relative;
+  overflow: hidden;
+  min-height: 0;
+}
+
+/* Inner wrapper positions SVG absolutely so it doesn't affect measurement */
+.chart-svg-wrapper {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.chart-svg-wrapper svg {
+  display: block;
 }
 
 /* ===== Legend ===== */
@@ -125,6 +152,7 @@ body {
   padding-top: 0.5rem;
   border-top: 1px solid var(--border);
   margin-top: 0.5rem;
+  flex-shrink: 0;
 }
 
 .legend-items {
