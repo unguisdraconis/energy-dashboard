@@ -28,6 +28,7 @@ function RenewablesSVG({ width, height, selectedCountries }) {
     const svg = d3.select(svgRef.current);
     svg.selectAll("*").remove();
 
+    // Read all theme colors from CSS — single source of truth
     const axisColor = cssVar("--chart-axis");
     const textColor = cssVar("--chart-text");
     const gridColor = cssVar("--chart-grid");

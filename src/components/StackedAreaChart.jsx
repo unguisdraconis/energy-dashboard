@@ -20,7 +20,7 @@ function StackedAreaSVG({ width, height, country }) {
     const svg = d3.select(svgRef.current);
     svg.selectAll("*").remove();
 
-    // Read theme colors
+    // Read theme colors from CSS custom properties — single source of truth
     const axisColor = cssVar("--chart-axis");
     const textColor = cssVar("--chart-text");
     const tooltipBg = cssVar("--chart-tooltip-bg");
