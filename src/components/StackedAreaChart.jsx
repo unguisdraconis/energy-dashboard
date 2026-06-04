@@ -1,17 +1,13 @@
 import { useRef, useEffect, useState } from "react";
 import * as d3 from "d3";
 import { ResponsiveChartWrapper } from "./ResponsiveChartWrapper";
+import { ChartTooltip } from "./ChartTooltip";
+import { ChartLegend } from "./ChartLegend";
+import { cssVar } from "../utils/cssVar";
 import { ENERGY_SOURCES, ENERGY_COLORS, ENERGY_LABELS } from "../colorPalette";
 import { getCountries, getCountryData } from "../data";
 
-/** Read a CSS custom property from :root */
-function cssVar(name) {
-  return getComputedStyle(document.documentElement)
-    .getPropertyValue(name)
-    .trim();
-}
-
-function StackedAreaSVG({ width, height, country }) {
+function StackedAreaSVG({ width, height, country, onTooltip }) {
   const svgRef = useRef(null);
 
   useEffect(() => {
@@ -20,12 +16,8 @@ function StackedAreaSVG({ width, height, country }) {
     const svg = d3.select(svgRef.current);
     svg.selectAll("*").remove();
 
-    // Read theme colors from CSS custom properties — single source of truth
     const axisColor = cssVar("--chart-axis");
     const textColor = cssVar("--chart-text");
-    const tooltipBg = cssVar("--chart-tooltip-bg");
-    const tooltipBorder = cssVar("--chart-tooltip-border");
-    const tooltipText = cssVar("--chart-tooltip-text");
     const crosshairColor = cssVar("--chart-crosshair");
 
     const margin = { top: 10, right: 15, bottom: 30, left: 50 };
@@ -125,19 +117,19 @@ function StackedAreaSVG({ width, height, country }) {
       .attr("font-size", "10px")
       .text("TWh");
 
-    // Tooltip overlay
-    const tooltip = g.append("g").style("display", "none");
-    tooltip
+    // Crosshair line (SVG — this stays in D3 since it's part of the chart drawing)
+    const crosshair = g
       .append("line")
       .attr("y1", 0)
       .attr("y2", h)
       .attr("stroke", crosshairColor)
       .attr("stroke-width", 1)
-      .attr("stroke-dasharray", "3,3");
-    const tooltipBox = tooltip.append("g");
+      .attr("stroke-dasharray", "3,3")
+      .style("display", "none");
 
     const bisect = d3.bisector((d) => d.year).left;
 
+    // Hover overlay — D3 handles mouse, React renders tooltip
     svg
       .append("rect")
       .attr("transform", `translate(${margin.left},${margin.top})`)
@@ -153,51 +145,32 @@ function StackedAreaSVG({ width, height, country }) {
         if (!d0) return;
         const d = d1 && year - d0.year > d1.year - year ? d1 : d0;
 
-        tooltip.style("display", null);
-        tooltip.select("line").attr("x1", x(d.year)).attr("x2", x(d.year));
+        crosshair
+          .style("display", null)
+          .attr("x1", x(d.year))
+          .attr("x2", x(d.year));
 
-        tooltipBox.selectAll("*").remove();
         const total = ENERGY_SOURCES.reduce((sum, src) => sum + d[src], 0);
-        const tx = x(d.year) + 10;
-        const ty = 10;
+        const rows = ENERGY_SOURCES.filter((src) => d[src] > 0).map((src) => ({
+          key: src,
+          label: ENERGY_LABELS[src],
+          color: ENERGY_COLORS[src],
+          value: d[src],
+        }));
 
-        tooltipBox
-          .append("rect")
-          .attr("x", Math.min(tx, w - 115))
-          .attr("y", ty)
-          .attr("width", 110)
-          .attr(
-            "height",
-            16 + ENERGY_SOURCES.filter((s) => d[s] > 0).length * 13,
-          )
-          .attr("rx", 4)
-          .attr("fill", tooltipBg)
-          .attr("stroke", tooltipBorder)
-          .attr("opacity", 0.95);
-
-        tooltipBox
-          .append("text")
-          .attr("x", Math.min(tx, w - 115) + 6)
-          .attr("y", ty + 12)
-          .attr("fill", tooltipText)
-          .attr("font-size", "10px")
-          .attr("font-weight", "600")
-          .text(`${d.year} — ${total.toFixed(0)} TWh`);
-
-        let row = 0;
-        ENERGY_SOURCES.filter((s) => d[s] > 0).forEach((src) => {
-          tooltipBox
-            .append("text")
-            .attr("x", Math.min(tx, w - 115) + 6)
-            .attr("y", ty + 25 + row * 13)
-            .attr("fill", ENERGY_COLORS[src])
-            .attr("font-size", "9px")
-            .text(`${ENERGY_LABELS[src]}: ${d[src].toFixed(1)}`);
-          row++;
+        onTooltip({
+          x: x(d.year) + margin.left,
+          y: margin.top + 10,
+          year: d.year,
+          title: `${d.year} — ${total.toFixed(0)} TWh`,
+          rows,
         });
       })
-      .on("mouseleave", () => tooltip.style("display", "none"));
-  }, [width, height, country]);
+      .on("mouseleave", () => {
+        crosshair.style("display", "none");
+        onTooltip(null);
+      });
+  }, [width, height, country, onTooltip]);
 
   return <svg ref={svgRef} width={width} height={height} />;
 }
@@ -205,20 +178,13 @@ function StackedAreaSVG({ width, height, country }) {
 export function StackedAreaChart() {
   const countries = getCountries();
   const [country, setCountry] = useState("World");
+  const [tooltip, setTooltip] = useState(null);
 
-  const legend = (
-    <div className="legend-items">
-      {ENERGY_SOURCES.map((src) => (
-        <div key={src} className="legend-item">
-          <span
-            className="legend-swatch"
-            style={{ background: ENERGY_COLORS[src] }}
-          />
-          <span className="legend-label">{ENERGY_LABELS[src]}</span>
-        </div>
-      ))}
-    </div>
-  );
+  const legendItems = ENERGY_SOURCES.map((src) => ({
+    key: src,
+    color: ENERGY_COLORS[src],
+    label: ENERGY_LABELS[src],
+  }));
 
   return (
     <ResponsiveChartWrapper
@@ -236,10 +202,39 @@ export function StackedAreaChart() {
           ))}
         </select>
       }
-      legend={legend}
+      legend={<ChartLegend items={legendItems} />}
     >
       {({ width, height }) => (
-        <StackedAreaSVG width={width} height={height} country={country} />
+        <>
+          <StackedAreaSVG
+            width={width}
+            height={height}
+            country={country}
+            onTooltip={setTooltip}
+          />
+          {tooltip && (
+            <ChartTooltip
+              x={tooltip.x}
+              y={tooltip.y}
+              containerWidth={width}
+              containerHeight={height}
+            >
+              <div className="tooltip-title">{tooltip.title}</div>
+              {tooltip.rows.map((row) => (
+                <div key={row.key} className="tooltip-row">
+                  <span
+                    className="tooltip-swatch"
+                    style={{ background: row.color }}
+                  />
+                  <span className="tooltip-label">{row.label}</span>
+                  <span className="tooltip-value" style={{ color: row.color }}>
+                    {row.value.toFixed(1)}
+                  </span>
+                </div>
+              ))}
+            </ChartTooltip>
+          )}
+        </>
       )}
     </ResponsiveChartWrapper>
   );

@@ -194,6 +194,63 @@ body {
   display: block;
 }
 
+/* ===== HTML Tooltip ===== */
+.chart-tooltip {
+  position: absolute;
+  z-index: 10;
+  pointer-events: none;
+  background: var(--chart-tooltip-bg);
+  border: 1px solid var(--chart-tooltip-border);
+  border-radius: 6px;
+  padding: 8px 10px;
+  box-shadow:
+    rgba(0, 0, 0, 0.08) 0 4px 12px,
+    rgba(0, 0, 0, 0.04) 0 1px 3px;
+  font-family: var(--sans);
+  font-size: 0.72rem;
+  line-height: 1.45;
+  color: var(--chart-tooltip-text);
+  white-space: nowrap;
+  max-width: 220px;
+  transition:
+    left 0.06s ease-out,
+    top 0.06s ease-out;
+}
+
+.tooltip-title {
+  font-weight: 600;
+  font-size: 0.75rem;
+  margin-bottom: 4px;
+  color: var(--chart-tooltip-text);
+}
+
+.tooltip-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 1px 0;
+}
+
+.tooltip-swatch {
+  width: 8px;
+  height: 8px;
+  border-radius: 2px;
+  flex-shrink: 0;
+}
+
+.tooltip-label {
+  flex: 1;
+  color: var(--chart-tooltip-text);
+  opacity: 0.8;
+}
+
+.tooltip-value {
+  font-family: var(--mono);
+  font-weight: 600;
+  font-size: 0.68rem;
+  text-align: right;
+}
+
 /* ===== Legend ===== */
 .chart-legend {
   padding-top: 0.5rem;

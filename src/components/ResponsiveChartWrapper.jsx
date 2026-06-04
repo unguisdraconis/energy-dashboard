@@ -8,6 +8,9 @@ import { useDimensions } from "../hooks/useDimensions";
  *
  * The SVG is absolutely positioned inside the container so it doesn't
  * affect the container's measured size (preventing a resize feedback loop).
+ *
+ * The .chart-svg-wrapper also serves as the positioning context for
+ * HTML tooltips — they sit absolutely positioned on top of the SVG.
  */
 export function ResponsiveChartWrapper({ title, controls, legend, children }) {
   const [ref, dimensions] = useDimensions();

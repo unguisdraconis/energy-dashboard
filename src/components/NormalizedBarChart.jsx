@@ -1,16 +1,13 @@
-import { useRef, useEffect, useState } from "react";
+import { useRef, useEffect, useState, useCallback } from "react";
 import * as d3 from "d3";
 import { ResponsiveChartWrapper } from "./ResponsiveChartWrapper";
+import { ChartTooltip } from "./ChartTooltip";
+import { ChartLegend } from "./ChartLegend";
+import { cssVar } from "../utils/cssVar";
 import { ENERGY_SOURCES, ENERGY_COLORS, ENERGY_LABELS } from "../colorPalette";
 import { data, getCountries, getYearRange } from "../data";
 
-function cssVar(name) {
-  return getComputedStyle(document.documentElement)
-    .getPropertyValue(name)
-    .trim();
-}
-
-function NormalizedBarSVG({ width, height, year }) {
+function NormalizedBarSVG({ width, height, year, onTooltip }) {
   const svgRef = useRef(null);
 
   useEffect(() => {
@@ -19,12 +16,8 @@ function NormalizedBarSVG({ width, height, year }) {
     const svg = d3.select(svgRef.current);
     svg.selectAll("*").remove();
 
-    // Read all theme colors from CSS — single source of truth
     const axisColor = cssVar("--chart-axis");
     const textColor = cssVar("--chart-text");
-    const tooltipBg = cssVar("--chart-tooltip-bg");
-    const tooltipBorder = cssVar("--chart-tooltip-border");
-    const tooltipText = cssVar("--chart-tooltip-text");
 
     const countries = getCountries().filter((c) => c !== "World");
     const yearData = countries
@@ -68,7 +61,7 @@ function NormalizedBarSVG({ width, height, year }) {
       .append("g")
       .attr("transform", `translate(${margin.left},${margin.top})`);
 
-    // Stacked bars
+    // Stacked bars — store data on each rect for tooltip lookup
     yearData.forEach((row) => {
       let cumulative = 0;
       ENERGY_SOURCES.forEach((src) => {
@@ -80,7 +73,8 @@ function NormalizedBarSVG({ width, height, year }) {
             .attr("width", Math.max(0, x(val) - x(0)))
             .attr("height", y.bandwidth())
             .attr("fill", ENERGY_COLORS[src])
-            .attr("opacity", 0.85);
+            .attr("opacity", 0.85)
+            .datum({ country: row.country, src, val, total: row.total });
         }
         cumulative += val;
       });
@@ -115,48 +109,30 @@ function NormalizedBarSVG({ width, height, year }) {
           .attr("font-size", "10px"),
       );
 
-    // Tooltip
-    const tooltipG = g.append("g").style("display", "none");
-    const tooltipRect = tooltipG
-      .append("rect")
-      .attr("rx", 4)
-      .attr("fill", tooltipBg)
-      .attr("stroke", tooltipBorder)
-      .attr("opacity", 0.95);
-    const tooltipTextEl = tooltipG
-      .append("text")
-      .attr("fill", tooltipText)
-      .attr("font-size", "10px");
-
-    svg
-      .selectAll('rect[fill]:not([fill="transparent"])')
+    // Tooltip interaction on bar segments
+    g.selectAll("rect[fill]")
       .on("mousemove", function (event) {
-        const rect = d3.select(this);
-        const fill = rect.attr("fill");
-        const cy = parseFloat(rect.attr("y"));
-        const row = yearData.find((d) => Math.abs(y(d.country) - cy) < 1);
-        if (!row) return;
-        const src = Object.entries(ENERGY_COLORS).find(
-          ([, c]) => c === fill,
-        )?.[0];
-        if (!src) return;
+        const d = d3.select(this).datum();
+        if (!d || !d.src) return;
 
-        tooltipG.style("display", null);
-        const label = `${ENERGY_LABELS[src]}: ${row[src].toFixed(1)}%`;
-        tooltipTextEl.text(label).attr("x", 6).attr("y", 14);
-        const bbox = tooltipTextEl.node().getBBox();
-        tooltipRect
-          .attr("width", bbox.width + 12)
-          .attr("height", bbox.height + 8);
+        const [mx, my] = d3.pointer(event, svg.node());
 
-        const [mx, my] = d3.pointer(event, g.node());
-        tooltipG.attr(
-          "transform",
-          `translate(${Math.min(mx + 10, w - bbox.width - 15)},${my - 20})`,
-        );
+        onTooltip({
+          x: mx,
+          y: my,
+          title: d.country,
+          rows: [
+            {
+              key: d.src,
+              label: ENERGY_LABELS[d.src],
+              color: ENERGY_COLORS[d.src],
+              value: `${d.val.toFixed(1)}%`,
+            },
+          ],
+        });
       })
-      .on("mouseleave", () => tooltipG.style("display", "none"));
-  }, [width, height, year]);
+      .on("mouseleave", () => onTooltip(null));
+  }, [width, height, year, onTooltip]);
 
   return <svg ref={svgRef} width={width} height={height} />;
 }
@@ -164,6 +140,15 @@ function NormalizedBarSVG({ width, height, year }) {
 export function NormalizedBarChart() {
   const [minYear, maxYear] = getYearRange();
   const [year, setYear] = useState(2024);
+  const [tooltip, setTooltip] = useState(null);
+
+  const handleTooltip = useCallback((val) => setTooltip(val), []);
+
+  const legendItems = ENERGY_SOURCES.map((src) => ({
+    key: src,
+    color: ENERGY_COLORS[src],
+    label: ENERGY_LABELS[src],
+  }));
 
   return (
     <ResponsiveChartWrapper
@@ -181,22 +166,39 @@ export function NormalizedBarChart() {
           <span className="year-label">{year}</span>
         </div>
       }
-      legend={
-        <div className="legend-items">
-          {ENERGY_SOURCES.map((src) => (
-            <div key={src} className="legend-item">
-              <span
-                className="legend-swatch"
-                style={{ background: ENERGY_COLORS[src] }}
-              />
-              <span className="legend-label">{ENERGY_LABELS[src]}</span>
-            </div>
-          ))}
-        </div>
-      }
+      legend={<ChartLegend items={legendItems} />}
     >
       {({ width, height }) => (
-        <NormalizedBarSVG width={width} height={height} year={year} />
+        <>
+          <NormalizedBarSVG
+            width={width}
+            height={height}
+            year={year}
+            onTooltip={handleTooltip}
+          />
+          {tooltip && (
+            <ChartTooltip
+              x={tooltip.x}
+              y={tooltip.y}
+              containerWidth={width}
+              containerHeight={height}
+            >
+              <div className="tooltip-title">{tooltip.title}</div>
+              {tooltip.rows.map((row) => (
+                <div key={row.key} className="tooltip-row">
+                  <span
+                    className="tooltip-swatch"
+                    style={{ background: row.color }}
+                  />
+                  <span className="tooltip-label">{row.label}</span>
+                  <span className="tooltip-value" style={{ color: row.color }}>
+                    {row.value}
+                  </span>
+                </div>
+              ))}
+            </ChartTooltip>
+          )}
+        </>
       )}
     </ResponsiveChartWrapper>
   );

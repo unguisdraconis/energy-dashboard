@@ -1,6 +1,9 @@
-import { useRef, useEffect, useState } from "react";
+import { useRef, useEffect, useState, useCallback } from "react";
 import * as d3 from "d3";
 import { ResponsiveChartWrapper } from "./ResponsiveChartWrapper";
+import { ChartTooltip } from "./ChartTooltip";
+import { CountryToggles } from "./CountryToggles";
+import { cssVar } from "../utils/cssVar";
 import { COUNTRY_PALETTE } from "../colorPalette";
 import { data, getCountries } from "../data";
 
@@ -12,13 +15,7 @@ const DEFAULT_COUNTRIES = [
   "Brazil",
 ];
 
-function cssVar(name) {
-  return getComputedStyle(document.documentElement)
-    .getPropertyValue(name)
-    .trim();
-}
-
-function ComparisonSVG({ width, height, selectedCountries }) {
+function ComparisonSVG({ width, height, selectedCountries, onTooltip }) {
   const svgRef = useRef(null);
 
   useEffect(() => {
@@ -27,10 +24,10 @@ function ComparisonSVG({ width, height, selectedCountries }) {
     const svg = d3.select(svgRef.current);
     svg.selectAll("*").remove();
 
-    // Read all theme colors from CSS — single source of truth
     const axisColor = cssVar("--chart-axis");
     const textColor = cssVar("--chart-text");
     const gridColor = cssVar("--chart-grid");
+    const crosshairColor = cssVar("--chart-crosshair");
 
     const margin = { top: 10, right: 75, bottom: 30, left: 55 };
     const w = width - margin.left - margin.right;
@@ -149,7 +146,66 @@ function ComparisonSVG({ width, height, selectedCountries }) {
       .attr("fill", textColor)
       .attr("font-size", "10px")
       .text("TWh");
-  }, [width, height, selectedCountries]);
+
+    // Crosshair line
+    const crosshair = g
+      .append("line")
+      .attr("y1", 0)
+      .attr("y2", h)
+      .attr("stroke", crosshairColor)
+      .attr("stroke-width", 1)
+      .attr("stroke-dasharray", "3,3")
+      .style("display", "none");
+
+    // Hover overlay
+    svg
+      .append("rect")
+      .attr("transform", `translate(${margin.left},${margin.top})`)
+      .attr("width", w)
+      .attr("height", h)
+      .attr("fill", "transparent")
+      .on("mousemove", (event) => {
+        const [mx] = d3.pointer(event);
+        const yearExact = x.invert(mx);
+
+        crosshair.style("display", null).attr("x1", mx).attr("x2", mx);
+
+        // Find closest data point for each country
+        const rows = countryData
+          .map((c, i) => {
+            const bisect = d3.bisector((d) => d.year).left;
+            const idx = bisect(c.values, yearExact, 1);
+            const d0 = c.values[idx - 1];
+            const d1 = c.values[idx];
+            if (!d0) return null;
+            const d = d1 && yearExact - d0.year > d1.year - yearExact ? d1 : d0;
+            return {
+              key: c.country,
+              label:
+                c.country.length > 14
+                  ? c.country.slice(0, 14) + "…"
+                  : c.country,
+              color: COUNTRY_PALETTE[i % COUNTRY_PALETTE.length],
+              value: `${d.primary_energy.toLocaleString()} TWh`,
+              year: d.year,
+            };
+          })
+          .filter(Boolean);
+
+        if (rows.length) {
+          onTooltip({
+            x: mx + margin.left,
+            y: margin.top + 10,
+            title: `${rows[0].year}`,
+            rows,
+          });
+        }
+      })
+      .on("mouseleave", () => {
+        crosshair.style("display", "none");
+        onTooltip(null);
+      });
+  }, [width, height, selectedCountries, onTooltip]);
 
   return <svg ref={svgRef} width={width} height={height} />;
 }
@@ -157,6 +213,9 @@ function ComparisonSVG({ width, height, selectedCountries }) {
 export function CountryComparisonChart() {
   const allCountries = getCountries().filter((c) => c !== "World");
   const [selected, setSelected] = useState(DEFAULT_COUNTRIES);
+  const [tooltip, setTooltip] = useState(null);
+
+  const handleTooltip = useCallback((val) => setTooltip(val), []);
 
   const toggle = (country) => {
     setSelected((prev) =>
@@ -172,35 +231,45 @@ export function CountryComparisonChart() {
     <ResponsiveChartWrapper
       title="Country Comparison — Total Energy"
       controls={
-        <div className="country-toggles">
-          {allCountries.map((c) => (
-            <button
-              key={c}
-              className={`toggle-btn ${selected.includes(c) ? "active" : ""}`}
-              style={
-                selected.includes(c)
-                  ? {
-                      borderColor:
-                        COUNTRY_PALETTE[
-                          selected.indexOf(c) % COUNTRY_PALETTE.length
-                        ],
-                    }
-                  : {}
-              }
-              onClick={() => toggle(c)}
-            >
-              {c}
-            </button>
-          ))}
-        </div>
+        <CountryToggles
+          countries={allCountries}
+          selected={selected}
+          onToggle={toggle}
+          palette={COUNTRY_PALETTE}
+        />
       }
     >
       {({ width, height }) => (
-        <ComparisonSVG
-          width={width}
-          height={height}
-          selectedCountries={selected}
-        />
+        <>
+          <ComparisonSVG
+            width={width}
+            height={height}
+            selectedCountries={selected}
+            onTooltip={handleTooltip}
+          />
+          {tooltip && (
+            <ChartTooltip
+              x={tooltip.x}
+              y={tooltip.y}
+              containerWidth={width}
+              containerHeight={height}
+            >
+              <div className="tooltip-title">{tooltip.title}</div>
+              {tooltip.rows.map((row) => (
+                <div key={row.key} className="tooltip-row">
+                  <span
+                    className="tooltip-swatch"
+                    style={{ background: row.color }}
+                  />
+                  <span className="tooltip-label">{row.label}</span>
+                  <span className="tooltip-value" style={{ color: row.color }}>
+                    {row.value}
+                  </span>
+                </div>
+              ))}
+            </ChartTooltip>
+          )}
+        </>
       )}
     </ResponsiveChartWrapper>
   );
