@@ -1,4 +1,4 @@
-import { useDimensions } from '../hooks/useDimensions';
+import { useDimensions } from "../hooks/useDimensions";
 
 /**
  * ResponsiveChartWrapper — the "wrapper pattern" for responsive charts.
@@ -6,12 +6,7 @@ import { useDimensions } from '../hooks/useDimensions';
  * Uses the useDimensions hook to measure the chart container, then passes
  * the measured { width, height } to children via a render-prop function.
  *
- * Props:
- *   title    — Chart title string
- *   controls — Optional React node rendered in the header (dropdowns, toggles, sliders)
- *   legend   — Optional React node rendered below the chart
- *   children — Render-prop function: ({ width, height }) => <SVG ... />
-  * The SVG is absolutely positioned inside the container so it doesn't
+ * The SVG is absolutely positioned inside the container so it doesn't
  * affect the container's measured size (preventing a resize feedback loop).
  */
 export function ResponsiveChartWrapper({ title, controls, legend, children }) {
@@ -24,10 +19,10 @@ export function ResponsiveChartWrapper({ title, controls, legend, children }) {
         {controls && <div className="chart-controls">{controls}</div>}
       </div>
       <div ref={ref} className="chart-container">
-         {dimensions.width > 0 && dimensions.height > 0 && (
-          <div className="chart-svg-wrapper">
-            {children(dimensions)}
-          </div>
+        {dimensions.width > 0 && dimensions.height > 0 && (
+          <div className="chart-svg-wrapper">{children(dimensions)}</div>
+        )}
+      </div>
       {legend && <div className="chart-legend">{legend}</div>}
     </div>
   );
