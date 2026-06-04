@@ -13,26 +13,71 @@ body,
   height: 100%;
 }
 
+/* ===== Light Theme (default) ===== */
 :root {
-  --bg-primary: #0f1729;
-  --bg-card: #1a2332;
-  --text-primary: #e2e8f0;
-  --text-secondary: #8892a4;
-  --text-muted: #4a5568;
-  --border: #2d3748;
-  --accent: #56b4e9;
+  --text: #6b6375;
+  --text-h: #08060d;
+  --bg: #fff;
+  --bg-card: #fff;
+  --border: #e5e4e7;
+  --code-bg: #f4f3ec;
+  --accent: #aa3bff;
+  --accent-bg: rgba(170, 59, 255, 0.1);
+  --accent-border: rgba(170, 59, 255, 0.5);
+  --social-bg: rgba(244, 243, 236, 0.5);
+  --shadow:
+    rgba(0, 0, 0, 0.1) 0 10px 15px -3px, rgba(0, 0, 0, 0.05) 0 4px 6px -2px;
+
+  /* Chart-specific tokens (read by D3 via getComputedStyle) */
+  --chart-axis: #d1d5db;
+  --chart-text: #6b6375;
+  --chart-grid: #e5e4e7;
+  --chart-tooltip-bg: #ffffff;
+  --chart-tooltip-border: #d1d5db;
+  --chart-tooltip-text: #08060d;
+  --chart-crosshair: #08060d;
+
+  /* Fonts */
+  --sans: system-ui, "Segoe UI", Roboto, sans-serif;
+  --heading: system-ui, "Segoe UI", Roboto, sans-serif;
+  --mono: ui-monospace, Consolas, monospace;
+
+  color-scheme: light dark;
+}
+
+/* ===== Dark Theme ===== */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --text: #9ca3af;
+    --text-h: #f3f4f6;
+    --bg: #16171d;
+    --bg-card: #1f2028;
+    --border: #2e303a;
+    --code-bg: #1f2028;
+    --accent: #c084fc;
+    --accent-bg: rgba(192, 132, 252, 0.15);
+    --accent-border: rgba(192, 132, 252, 0.5);
+    --social-bg: rgba(47, 48, 58, 0.5);
+    --shadow:
+      rgba(0, 0, 0, 0.4) 0 10px 15px -3px, rgba(0, 0, 0, 0.25) 0 4px 6px -2px;
+
+    --chart-axis: #3f4150;
+    --chart-text: #9ca3af;
+    --chart-grid: #2e303a;
+    --chart-tooltip-bg: #1f2028;
+    --chart-tooltip-border: #3f4150;
+    --chart-tooltip-text: #f3f4f6;
+    --chart-crosshair: #f3f4f6;
+  }
 }
 
 body {
-  background: var(--bg-primary);
-  color: var(--text-primary);
-  font-family:
-    "Inter",
-    -apple-system,
-    BlinkMacSystemFont,
-    "Segoe UI",
-    sans-serif;
-  line-height: 1.5;
+  background: var(--bg);
+  color: var(--text);
+  font: 16px/1.5 var(--sans);
+  letter-spacing: 0.18px;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
@@ -46,23 +91,22 @@ body {
 }
 
 .dashboard-header h1 {
+  font-family: var(--heading);
   font-size: 1.75rem;
-  font-weight: 700;
-  background: linear-gradient(135deg, #56b4e9, #e69f00);
-  -webkit-background-clip: text;
-  background-clip: text;
-  -webkit-text-fill-color: transparent;
+  font-weight: 600;
+  color: var(--text-h);
   margin-bottom: 0.35rem;
 }
 
 .dashboard-header .subtitle {
-  color: var(--text-secondary);
+  color: var(--text);
   font-size: 0.95rem;
 }
 
 .dashboard-header .data-source {
-  color: var(--text-muted);
+  color: var(--text);
   font-size: 0.8rem;
+  opacity: 0.6;
   margin-top: 0.15rem;
 }
 
@@ -97,8 +141,10 @@ body {
   padding: 1rem;
   display: flex;
   flex-direction: column;
-  height: 440px;
+  height: 480px;
   overflow: hidden;
+  box-shadow: var(--shadow);
+  transition: box-shadow 0.3s;
 }
 
 .chart-header {
@@ -112,9 +158,10 @@ body {
 }
 
 .chart-title {
+  font-family: var(--heading);
   font-size: 0.95rem;
   font-weight: 600;
-  color: var(--text-primary);
+  color: var(--text-h);
   margin: 0;
   white-space: nowrap;
 }
@@ -176,18 +223,18 @@ body {
 
 .legend-label {
   font-size: 0.72rem;
-  color: var(--text-secondary);
+  color: var(--text);
 }
 
 /* ===== Controls: Select ===== */
 .chart-select {
-  background: var(--bg-primary);
-  color: var(--text-primary);
+  font-family: var(--sans);
+  background: var(--bg);
+  color: var(--text-h);
   border: 1px solid var(--border);
   border-radius: 6px;
   padding: 0.3rem 0.55rem;
   font-size: 0.78rem;
-  font-family: inherit;
   cursor: pointer;
   outline: none;
   transition: border-color 0.15s;
@@ -207,25 +254,25 @@ body {
 }
 
 .toggle-btn {
+  font-family: var(--sans);
   background: transparent;
   border: 1px solid var(--border);
-  color: var(--text-muted);
+  color: var(--text);
   border-radius: 4px;
   padding: 0.15rem 0.45rem;
   font-size: 0.68rem;
-  font-family: inherit;
   cursor: pointer;
   transition: all 0.12s;
   white-space: nowrap;
 }
 
 .toggle-btn:hover {
-  border-color: var(--text-secondary);
-  color: var(--text-secondary);
+  border-color: var(--accent-border);
+  color: var(--text-h);
 }
 
 .toggle-btn.active {
-  color: var(--text-primary);
+  color: var(--text-h);
   border-width: 2px;
   font-weight: 600;
 }
@@ -238,6 +285,7 @@ body {
 }
 
 .year-label {
+  font-family: var(--mono);
   font-size: 0.85rem;
   font-weight: 700;
   color: var(--accent);
@@ -300,7 +348,7 @@ body {
 /* ===== Responsive adjustments ===== */
 @media (max-width: 768px) {
   .chart-widget {
-    min-height: 400px;
+    height: 420px;
   }
 
   .chart-header {
@@ -329,7 +377,7 @@ body {
 
   .chart-widget {
     padding: 0.75rem;
-    min-height: 360px;
+    height: 380px;
   }
 
   .chart-title {
