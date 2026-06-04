@@ -11,6 +11,8 @@ import { useDimensions } from '../hooks/useDimensions';
  *   controls — Optional React node rendered in the header (dropdowns, toggles, sliders)
  *   legend   — Optional React node rendered below the chart
  *   children — Render-prop function: ({ width, height }) => <SVG ... />
+  * The SVG is absolutely positioned inside the container so it doesn't
+ * affect the container's measured size (preventing a resize feedback loop).
  */
 export function ResponsiveChartWrapper({ title, controls, legend, children }) {
   const [ref, dimensions] = useDimensions();
@@ -22,10 +24,10 @@ export function ResponsiveChartWrapper({ title, controls, legend, children }) {
         {controls && <div className="chart-controls">{controls}</div>}
       </div>
       <div ref={ref} className="chart-container">
-        {dimensions.width > 0 &&
-          dimensions.height > 0 &&
-          children(dimensions)}
-      </div>
+         {dimensions.width > 0 && dimensions.height > 0 && (
+          <div className="chart-svg-wrapper">
+            {children(dimensions)}
+          </div>
       {legend && <div className="chart-legend">{legend}</div>}
     </div>
   );
