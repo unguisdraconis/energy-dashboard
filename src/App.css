@@ -106,7 +106,7 @@ body {
 .dashboard-header .description {
   text-align: justify;
   color: var(--text);
-  font-size: 0.95rem;
+  font-size: 1rem;
   margin-top: 0.75rem;
   margin-bottom: 0.75rem;
 }
