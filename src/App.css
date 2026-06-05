@@ -213,8 +213,8 @@ body {
   white-space: nowrap;
   max-width: 220px;
   transition:
-    left 0.06s ease-out,
-    top 0.06s ease-out;
+    left 0s ease-out,
+    top 0s ease-out;
 }
 
 .tooltip-title {

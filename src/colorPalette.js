@@ -54,3 +54,73 @@ export const COUNTRY_PALETTE = [
   "#6A5ACD",
   "#2CA02C",
 ];
+
+/**
+ * Region definitions — Gapminder-style groupings.
+ * Each region gets one Okabe-Ito color. Countries are colored by region.
+ */
+export const REGIONS = {
+  Africa: { color: "#E69F00", countries: ["Egypt", "Nigeria", "South Africa"] },
+  Americas: {
+    color: "#009E73",
+    countries: ["Argentina", "Brazil", "Canada", "Mexico", "United States"],
+  },
+  Asia: {
+    color: "#D55E00",
+    countries: [
+      "China",
+      "India",
+      "Indonesia",
+      "Japan",
+      "Malaysia",
+      "South Korea",
+      "Thailand",
+      "Vietnam",
+    ],
+  },
+  Europe: {
+    color: "#0072B2",
+    countries: [
+      "France",
+      "Germany",
+      "Italy",
+      "Poland",
+      "Russia",
+      "Spain",
+      "United Kingdom",
+    ],
+  },
+  "Middle East & Oceania": {
+    color: "#CC79A7",
+    countries: [
+      "Australia",
+      "Iran",
+      "Saudi Arabia",
+      "Turkey",
+      "United Arab Emirates",
+    ],
+  },
+};
+
+/**
+ * Lookup helpers for region data.
+ */
+export function getRegionForCountry(country) {
+  for (const [region, info] of Object.entries(REGIONS)) {
+    if (info.countries.includes(country)) return region;
+  }
+  return null;
+}
+
+export function getColorForCountry(country) {
+  for (const info of Object.values(REGIONS)) {
+    if (info.countries.includes(country)) return info.color;
+  }
+  return "#999999";
+}
+
+export const REGION_NAMES = Object.keys(REGIONS);
+
+export const REGION_COLORS = Object.fromEntries(
+  Object.entries(REGIONS).map(([name, info]) => [name, info.color]),
+);
