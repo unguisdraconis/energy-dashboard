@@ -1,8 +1,8 @@
-import './App.css';
-import { StackedAreaChart } from './components/StackedAreaChart';
-import { CountryComparisonChart } from './components/CountryComparisonChart';
-import { NormalizedBarChart } from './components/NormalizedBarChart';
-import { RenewablesGrowthChart } from './components/RenewablesGrowthChart';
+import "./App.css";
+import { StackedAreaChart } from "./components/StackedAreaChart";
+import { CountryComparisonChart } from "./components/CountryComparisonChart";
+import { NormalizedBarChart } from "./components/NormalizedBarChart";
+import { BubbleChart } from "./components/BubbleChart";
 
 function App() {
   return (
@@ -20,7 +20,7 @@ function App() {
         <StackedAreaChart />
         <CountryComparisonChart />
         <NormalizedBarChart />
-        <RenewablesGrowthChart />
+        <BubbleChart />
       </main>
     </>
   );
