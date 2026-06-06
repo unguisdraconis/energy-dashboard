@@ -3,6 +3,7 @@ import { StackedAreaChart } from "./components/StackedAreaChart";
 import { CountryComparisonChart } from "./components/CountryComparisonChart";
 import { NormalizedBarChart } from "./components/NormalizedBarChart";
 import { BubbleChart } from "./components/BubbleChart";
+import { DonutChart } from "./components/DonutChart";
 
 function App() {
   return (
@@ -15,13 +16,14 @@ function App() {
         <p className="description">
           The Global Energy Dashboard offers an exploration of global energy
           trends through four interactive charts. The Stacked Area Chart
-          visualizes a country's shifting energy mix over time, emphasizing the
-          decline in coal and rise in renewables. Meanwhile, the Multi-Line
-          Chart compares total primary energy consumption across countries,
-          highlighting distinct patterns such as China’s growth (production)
-          versus Europe’s stagnation. A Normalized Stacked Bar Chart provides
-          snapshots of each country's energy structure for selected years,
-          underscoring differences like France’s nuclear focus or Brazil’s hydro
+          visualizes a country's shifting energy mix over time, revealing a rise
+          in the percentage of renewables, but also also a rise in the
+          consumption of coal, oil, and gas. Meanwhile, the Multi-Line Chart
+          compares total primary energy consumption across countries,
+          highlighting distinct patterns such as China’s growth versus Europe’s
+          stagnation. A Normalized Stacked Bar Chart provides snapshots of each
+          country's energy structure for selected years, underscoring
+          differences like France’s nuclear focus or Brazil’s hydroelectric
           reliance. The Bubble Chart maps data in three dimensions—energy
           consumption on the X-axis, renewables share on the Y-axis, and fossil
           fuel dependency by bubble size—with color-coded regions and a year
@@ -40,6 +42,7 @@ function App() {
         <CountryComparisonChart />
         <NormalizedBarChart />
         <BubbleChart />
+        <DonutChart />
       </main>
     </>
   );
