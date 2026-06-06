@@ -7,6 +7,57 @@ import { cssVar } from "../utils/cssVar";
 import { ENERGY_SOURCES, ENERGY_COLORS, ENERGY_LABELS } from "../colorPalette";
 import { data, getCountries, getYearRange } from "../data";
 
+function getCountrySummary(year) {
+  return getCountries()
+    .filter((c) => c !== "World")
+    .map((country) => {
+      const row = data.find((d) => d.country === country && d.year === year);
+      const total = row?.primary_energy ?? 0;
+      const sources = ENERGY_SOURCES.map((source) => ({
+        source,
+        value: row?.[source] ?? 0,
+      })).filter((item) => item.value > 0);
+      const dominantSource = sources.reduce(
+        (best, current) => (current.value > best.value ? current : best),
+        { source: ENERGY_SOURCES[0], value: 0 },
+      );
+
+      return {
+        country,
+        total,
+        dominantSource: dominantSource.source,
+        sources: sources.sort((a, b) => b.value - a.value),
+      };
+    })
+    .filter((entry) => entry.total > 0)
+    .sort((a, b) => b.total - a.total);
+}
+
+function initializePoints(items, width, height) {
+  const centerX = width / 2;
+  const centerY = height / 2;
+  const totalValue = d3.sum(items, (item) => item.total);
+  const maxRadius = Math.min(width, height) * 0.43;
+  let angle = 0;
+
+  return items.map((item, index) => {
+    const fraction = item.total / totalValue;
+    const radius =
+      maxRadius * Math.sqrt(fraction) * (0.65 + 0.35 * (index / items.length));
+    const theta = angle + (index / items.length) * Math.PI * 1.25;
+    angle += 2 * Math.PI * fraction;
+    return [
+      centerX + Math.cos(theta) * radius,
+      centerY + Math.sin(theta) * radius,
+    ];
+  });
+}
+
+function pathFromPolygon(polygon) {
+  if (!polygon || polygon.length === 0) return null;
+  return `M${polygon.map(([x, y]) => `${x},${y}`).join("L")}Z`;
+}
+
 function TreemapSVG({ width, height, year, onTooltip }) {
   const svgRef = useRef(null);
 
@@ -17,124 +68,115 @@ function TreemapSVG({ width, height, year, onTooltip }) {
     svg.selectAll("*").remove();
 
     const textColor = cssVar("--chart-text");
-    const backgroundColor = cssVar("--bg-card");
     const axisColor = cssVar("--chart-axis");
+    const backgroundColor = cssVar("--bg-card");
 
-    const countries = getCountries().filter((c) => c !== "World");
-    const yearData = countries
-      .map((country) => {
-        const row = data.find((d) => d.country === country && d.year === year);
-        if (!row) return null;
-        const total = row.primary_energy || 0;
-        if (total <= 0) return null;
-        return {
-          name: country,
-          children: ENERGY_SOURCES.map((src) => ({
-            name: src,
-            value: row[src] ?? 0,
-            country,
-          })),
-        };
-      })
-      .filter(Boolean)
-      .filter((row) => row.children.some((child) => child.value > 0));
+    const countries = getCountrySummary(year);
+    if (!countries.length) return;
 
-    if (!yearData.length) return;
-
-    const margin = { top: 10, right: 15, bottom: 10, left: 15 };
+    const margin = { top: 12, right: 12, bottom: 12, left: 12 };
     const w = width - margin.left - margin.right;
     const h = height - margin.top - margin.bottom;
     if (w <= 0 || h <= 0) return;
 
-    const root = {
-      name: "Energy Mix",
-      children: yearData,
-    };
-
-    const treemap = d3.treemap().size([w, h]).paddingInner(1.5).paddingOuter(0);
-
-    const hierarchy = d3
-      .hierarchy(root)
-      .sum((d) => d.value)
-      .sort((a, b) => b.value - a.value);
-
-    const tree = treemap(hierarchy);
-    const g = svg
+    const root = svg
       .append("g")
       .attr("transform", `translate(${margin.left},${margin.top})`);
+    root
+      .append("rect")
+      .attr("x", 0)
+      .attr("y", 0)
+      .attr("width", w)
+      .attr("height", h)
+      .attr("fill", backgroundColor);
 
-    const countryNodes = tree
-      .descendants()
-      .filter((node) => node.depth === 1 && node.value > 0);
+    const points = initializePoints(countries, w, h).filter((point) =>
+      point.every((value) => Number.isFinite(value)),
+    );
+    if (points.length < 3) return;
 
-    countryNodes.forEach((node) => {
-      const { x0, y0, x1, y1 } = node;
-      g.append("rect")
-        .attr("x", x0)
-        .attr("y", y0)
-        .attr("width", x1 - x0)
-        .attr("height", y1 - y0)
-        .attr("fill", backgroundColor)
-        .attr("stroke", axisColor)
-        .attr("stroke-width", 1)
-        .attr("opacity", 1);
+    const delaunay = d3.Delaunay.from(points);
+    const voronoi = delaunay.voronoi([0, 0, w, h]);
 
-      const labelWidth = x1 - x0;
-      const labelHeight = y1 - y0;
-      if (labelWidth > 80 && labelHeight > 24) {
-        g.append("text")
-          .attr("x", x0 + 8)
-          .attr("y", y0 + 16)
+    const cells = countries
+      .map((country, index) => {
+        const polygon = voronoi.cellPolygon(index);
+        return {
+          ...country,
+          polygon: polygon || [],
+          index,
+        };
+      })
+      .filter((cell) => cell.polygon.length > 0);
+
+    const cellsGroup = root.append("g").attr("class", "voronoi-cells");
+
+    cellsGroup
+      .selectAll("path")
+      .data(cells)
+      .join("path")
+      .attr("d", (d) => pathFromPolygon(d.polygon))
+      .attr("fill", (d) => ENERGY_COLORS[d.dominantSource])
+      .attr("stroke", axisColor)
+      .attr("stroke-width", 1)
+      .attr("opacity", 0.96)
+      .on("mousemove", function (event, d) {
+        const [mx, my] = d3.pointer(event, svg.node());
+        const total = d.total;
+        onTooltip({
+          x: mx,
+          y: my,
+          title: d.country,
+          rows: [
+            {
+              key: `${d.country}-total`,
+              label: "Total energy",
+              color: ENERGY_COLORS[d.dominantSource],
+              value: `${total.toLocaleString()} TWh`,
+            },
+            ...d.sources.slice(0, 3).map((source) => ({
+              key: `${d.country}-${source.source}`,
+              label: ENERGY_LABELS[source.source],
+              color: ENERGY_COLORS[source.source],
+              value: `${source.value.toLocaleString()} TWh`,
+            })),
+          ],
+        });
+      })
+      .on("mouseleave", () => onTooltip(null));
+
+    cells
+      .filter((cell) => Math.abs(d3.polygonArea(cell.polygon)) > 700)
+      .forEach((cell) => {
+        const centroid = d3.polygonCentroid(cell.polygon);
+        const bounds = cell.polygon.reduce(
+          (acc, point) => {
+            return {
+              x0: Math.min(acc.x0, point[0]),
+              y0: Math.min(acc.y0, point[1]),
+              x1: Math.max(acc.x1, point[0]),
+              y1: Math.max(acc.y1, point[1]),
+            };
+          },
+          { x0: Infinity, y0: Infinity, x1: -Infinity, y1: -Infinity },
+        );
+
+        const widthBox = bounds.x1 - bounds.x0;
+        const heightBox = bounds.y1 - bounds.y0;
+        if (widthBox < 60 || heightBox < 24) return;
+
+        root
+          .append("text")
+          .attr("x", centroid[0])
+          .attr("y", centroid[1])
           .attr("fill", textColor)
           .attr("font-size", "11px")
-          .attr("font-weight", 600)
-          .attr("text-anchor", "start")
-          .attr("alignment-baseline", "hanging")
+          .attr("font-weight", 700)
+          .attr("text-anchor", "middle")
+          .attr("alignment-baseline", "middle")
           .style("pointer-events", "none")
-          .text(node.data.name);
-      }
-    });
-
-    const sourceNodes = tree
-      .descendants()
-      .filter((node) => node.depth === 2 && node.value > 0);
-
-    sourceNodes.forEach((node) => {
-      const { x0, y0, x1, y1, value } = node;
-      const sourceName = node.data.name;
-      const countryName = node.data.country;
-      const parentTotal = node.parent?.value || value;
-      const share = ((value / parentTotal) * 100).toFixed(1);
-
-      if (x1 - x0 < 16 || y1 - y0 < 16) return;
-
-      g.append("rect")
-        .attr("x", x0)
-        .attr("y", y0)
-        .attr("width", x1 - x0)
-        .attr("height", y1 - y0)
-        .attr("fill", ENERGY_COLORS[sourceName])
-        .attr("stroke", backgroundColor)
-        .attr("stroke-width", 0.8)
-        .attr("opacity", 0.95)
-        .on("mousemove", function (event) {
-          const [mx, my] = d3.pointer(event, svg.node());
-          onTooltip({
-            x: mx,
-            y: my,
-            title: `${ENERGY_LABELS[sourceName]} — ${countryName}`,
-            rows: [
-              {
-                key: `${countryName}-${sourceName}`,
-                label: "Energy",
-                color: ENERGY_COLORS[sourceName],
-                value: `${value.toLocaleString()} TWh (${share}%)`,
-              },
-            ],
-          });
-        })
-        .on("mouseleave", () => onTooltip(null));
-    });
+          .text(cell.country);
+      });
   }, [width, height, year, onTooltip]);
 
   return <svg ref={svgRef} width={width} height={height} />;
@@ -155,7 +197,7 @@ export function TreemapChart() {
 
   return (
     <ResponsiveChartWrapper
-      title="Energy Consumption by Country"
+      title="Voronoi Energy Treemap"
       controls={
         <div className="year-slider-container">
           <input
