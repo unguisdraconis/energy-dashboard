@@ -7,7 +7,6 @@ import { cssVar } from "../utils/cssVar";
 import { ENERGY_SOURCES, ENERGY_COLORS, ENERGY_LABELS } from "../colorPalette";
 import { data, getCountries, getYearRange } from "../data";
 
-// The Voronai Treemap
 function getCountrySummary(year) {
   return getCountries()
     .filter((c) => c !== "World")
@@ -34,7 +33,6 @@ function getCountrySummary(year) {
     .sort((a, b) => b.total - a.total);
 }
 
-// Initialize points in a spiral pattern to help create more balanced Voronai cells, especially for smaller countries.
 function initializePoints(items, width, height) {
   const centerX = width / 2;
   const centerY = height / 2;
