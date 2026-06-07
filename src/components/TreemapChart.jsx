@@ -1,4 +1,4 @@
-//import { useRef, useEffect, useState, useCallback } from "react";
+import { useRef, useEffect, useState, useCallback } from "react";
 import * as d3 from "d3";
 import { ResponsiveChartWrapper } from "./ResponsiveChartWrapper";
 import { ChartTooltip } from "./ChartTooltip";
@@ -42,7 +42,6 @@ function initializePoints(items, width, height) {
   const maxRadius = Math.min(width, height) * 0.43;
   let angle = 0;
 
-  // Sort items by total value to place smaller countries closer to the center.
   return items.map((item, index) => {
     const fraction = item.total / totalValue;
     const radius =
@@ -56,16 +55,14 @@ function initializePoints(items, width, height) {
   });
 }
 
-// Convert Voronai cell polygons from arrays of points into SVG path data strings. This function takes a polygon defined as an array of [x, y] points and constructs a path string that can be used in the "d" attribute of an SVG <path> element. It starts with "M" to move to the first point, then uses "L" to draw lines to each subsequent point, and ends with "Z" to close the path. If the polygon is empty or undefined, it returns null.
 function pathFromPolygon(polygon) {
   if (!polygon || polygon.length === 0) return null;
   return `M${polygon.map(([x, y]) => `${x},${y}`).join("L")}Z`;
 }
-// The TreemapSVG component is responsible for rendering the Voronoi treemap visualization. It uses D3 to create an SVG element and draw the Voronoi cells based on the energy data for each country. The component takes width, height, year, and onTooltip as props. It initializes the SVG and updates it whenever the width, height, or year changes. The Voronoi cells are colored according to the dominant energy source for each country, and tooltips are displayed on mouse hover to show detailed information about the energy consumption of each country.
+
 function TreemapSVG({ width, height, year, onTooltip }) {
   const svgRef = useRef(null);
 
-  // The useEffect hook is used to create and update the Voronoi treemap whenever the width, height, or year changes. It first checks if the width and height are defined, then selects the SVG element and clears any existing content. It retrieves the energy data for the specified year and initializes the points for the Voronoi diagram using a spiral pattern. The Delaunay triangulation is computed from these points, and the Voronoi diagram is generated. Each cell of the Voronoi diagram is then drawn as a path in the SVG, colored according to the dominant energy source for that country. Tooltips are added to display detailed information when hovering over each cell, and country names are displayed for larger cells.
   useEffect(() => {
     if (!width || !height) return;
 
