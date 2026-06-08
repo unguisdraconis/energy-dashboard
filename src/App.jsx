@@ -3,8 +3,8 @@ import { StackedAreaChart } from "./components/StackedAreaChart";
 import { CountryComparisonChart } from "./components/CountryComparisonChart";
 import { NormalizedBarChart } from "./components/NormalizedBarChart";
 import { BubbleChart } from "./components/BubbleChart";
-import { RadarChart } from "./components/RadarChart";
 import { TreemapChart } from "./components/TreemapChart";
+import { RadarChart } from "./components/RadarChart";
 
 function App() {
   return (
@@ -15,18 +15,18 @@ function App() {
           How the world's energy mix has evolved over 60 years (1965–2024)
         </p>
         <p className="description">
-          The Global Energy Dashboard offers a playground to explore global
+          The Global Energy Dashboard offers a playground for exploring global
           energy trends through six interactive charts. The Stacked Area Chart
           visualizes a country's shifting energy mix over time, revealing a rise
           in the percentage of renewables, but also a continued reliance on
           fossil fuels. The Multi-Line Chart compares total primary energy
           consumption across countries, while the Normalized Stacked Bar Chart
           snapshots energy structure for selected years. The Bubble Chart maps
-          energy consumption, renewables share, and fossil dependency, and the
-          Radar Chart allows us to visualize the imbalanced energy profiles of
-          different countries. The Voronoi Treemap shows country-level energy
-          totals using year-slider interaction, with color indicating each
-          country's primary energy source.
+          energy consumption, renewables share, and fossil dependency. The
+          Voronoi Treemap shows country-level energy totals using year-slider
+          interaction, with color indicating each country's primary energy
+          source, and the Radar Chart allows us to visualize the imbalanced
+          energy profiles of different countries.
         </p>
       </header>
       <main className="dashboard-grid">
@@ -34,8 +34,8 @@ function App() {
         <CountryComparisonChart />
         <NormalizedBarChart />
         <BubbleChart />
-        <RadarChart />
         <TreemapChart />
+        <RadarChart />
       </main>
       <footer className="dashboard-footer">
         <p className="data-source">
