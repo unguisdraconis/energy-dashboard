@@ -28,11 +28,6 @@ function App() {
           totals using year-slider interaction, with color indicating each
           country's primary energy source.
         </p>
-        <p className="data-source">
-          Source: Our World in Data · Energy consumption by source (TWh) ·
-          Scaffolding by Claude Opus 4.6 · Visualization by Jeremiah King as
-          part of D3 Loves React course taught by Yan Holtz
-        </p>
       </header>
       <main className="dashboard-grid">
         <StackedAreaChart />
@@ -42,6 +37,34 @@ function App() {
         <RadarChart />
         <TreemapChart />
       </main>
+      <footer className="dashboard-footer">
+        <p className="data-source">
+          Source: Our World in Data · Energy consumption by source (TWh) ·
+          Scaffolding by Claude Opus 4.6 · Visualization by Jeremiah King as
+          part of D3 Loves React course taught by Yan Holtz
+        </p>
+
+        <a
+          className="social-button"
+          href="https://github.com/unguisdraconis"
+          target="_blank"
+          rel="noreferrer"
+          aria-label="GitHub page"
+          title="GitHub"
+        >
+          🐙
+        </a>
+        <a
+          className="social-button"
+          href="https://www.linkedin.com/in/jeremiahjking"
+          target="_blank"
+          rel="noreferrer"
+          aria-label="LinkedIn profile"
+          title="LinkedIn"
+        >
+          🔗
+        </a>
+      </footer>
     </>
   );
 }

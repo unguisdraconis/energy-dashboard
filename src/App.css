@@ -111,13 +111,6 @@ body {
   margin-bottom: 0.75rem;
 }
 
-.dashboard-header .data-source {
-  color: var(--text);
-  font-size: 0.8rem;
-  opacity: 0.6;
-  margin-top: 0.15rem;
-}
-
 .dashboard-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -139,6 +132,52 @@ body {
   .dashboard-header .subtitle {
     font-size: 0.85rem;
   }
+}
+
+.dashboard-footer {
+  text-align: center;
+  padding: 1.5rem 2rem;
+  font-size: 0.9rem;
+  opacity: 0.8;
+  margin-top: 2 rem;
+}
+
+.dashboard-footer .data-source {
+  text-align: center;
+  color: var(--text);
+  font-size: 0.8rem;
+  opacity: 0.6;
+  margin-top: 0.15rem;
+}
+
+.dashboard-footer .social-button {
+  width: 40px;
+  height: 40px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  border: 1px solid rgba(0, 0, 0, 0.2);
+  background: white;
+  color: #333;
+  text-decoration: none;
+  font-size: 20px;
+  margin-top: 0.75rem;
+  transition:
+    transform 0.15s ease,
+    background 0.15s ease,
+    border-color 0.15s ease;
+}
+
+.dashboard-footer .social-button:hover {
+  text-align: center;
+  background: rgba(255, 255, 255, 0.9);
+  border-color: rgba(0, 0, 0, 0.35);
+  transform: translateY(-1px);
+}
+
+.dashboard-footer .social-button:focus-visible {
+  box-shadow: 0 0 0 3px rgba(0, 114, 178, 0.5);
 }
 
 /* ===== Chart Widget Card ===== */
