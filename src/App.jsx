@@ -4,6 +4,7 @@ import { CountryComparisonChart } from "./components/CountryComparisonChart";
 import { NormalizedBarChart } from "./components/NormalizedBarChart";
 import { BubbleChart } from "./components/BubbleChart";
 import { DonutChart } from "./components/DonutChart";
+import { RadarChart } from "./components/RadarChart";
 import { TreemapChart } from "./components/TreemapChart";
 
 function App() {
@@ -41,6 +42,7 @@ function App() {
         <NormalizedBarChart />
         <BubbleChart />
         <DonutChart />
+        <RadarChart />
         <TreemapChart />
       </main>
     </>
