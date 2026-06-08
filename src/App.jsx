@@ -23,11 +23,10 @@ function App() {
           consumption across countries, while the Normalized Stacked Bar Chart
           snapshots energy structure for selected years. The Bubble Chart maps
           energy consumption, renewables share, and fossil dependency, and the
-          Donut Chart clearly shows that in 2024, while the world is still
-          powered by fossil fuels, renewables are playing an increasingly
-          important role. The Voronoi Treemap shows country-level energy totals
-          using year-slider interaction, with color indicating each country's
-          primary energy source.
+          Radar Chart allows us to visualize the imbalanced energy profiles of
+          different countries. The Voronoi Treemap shows country-level energy
+          totals using year-slider interaction, with color indicating each
+          country's primary energy source.
         </p>
         <p className="data-source">
           Source: Our World in Data · Energy consumption by source (TWh) ·
