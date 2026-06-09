@@ -6,7 +6,7 @@ import { ChartLegend } from "./ChartLegend";
 import { cssVar } from "../utils/cssVar";
 import { ENERGY_SOURCES, ENERGY_COLORS, ENERGY_LABELS } from "../colorPalette";
 import { getCountries, getCountryData, getYearRange } from "../data";
-
+/** ----- Radar Chart ----- */
 function RadarSVG({ width, height, country, year, isLog, onTooltip }) {
   const svgRef = useRef(null);
 
@@ -59,7 +59,7 @@ function RadarSVG({ width, height, country, year, isLog, onTooltip }) {
     const formatValue = d3.format("~s");
 
     const g = svg.append("g").attr("transform", "translate(0,0)");
-
+    /** ----- Radar Grid ----- */
     g.selectAll(".radar-grid")
       .data(gridLevels)
       .join("circle")
@@ -124,7 +124,7 @@ function RadarSVG({ width, height, country, year, isLog, onTooltip }) {
         return angle < Math.PI ? "0" : "0.75em";
       })
       .text((d) => ENERGY_LABELS[d.source]);
-
+    /** ----- Radar Points ----- */
     const radarPoints = values.map((d, i) => {
       const angle = i * angleStep - Math.PI / 2;
       const valueRadius = d.value === 0 ? 0 : radiusScale(d.value);
@@ -135,7 +135,7 @@ function RadarSVG({ width, height, country, year, isLog, onTooltip }) {
         y: cy + Math.sin(angle) * valueRadius,
       };
     });
-
+    /** ----- Radar Line ----- */
     const radarLine = d3
       .line()
       .x((d) => d.x)
@@ -206,7 +206,7 @@ export function RadarChart() {
     color: ENERGY_COLORS[src],
     label: ENERGY_LABELS[src],
   }));
-
+  /** ----- Responsive Chart Wrapper */
   return (
     <ResponsiveChartWrapper
       title="Country Energy Mix Radar"
