@@ -334,6 +334,20 @@ body {
   font-weight: 700;
 }
 
+/* Area chart series styling — use classes set by D3 for interactive highlighting */
+.area-layer {
+  opacity: 0.85;
+  transition: opacity 150ms ease;
+}
+
+.area-layer.dimmed {
+  opacity: 0.12;
+}
+
+.area-layer.highlight {
+  opacity: 1;
+}
+
 .legend-swatch {
   width: 12px;
   height: 12px;

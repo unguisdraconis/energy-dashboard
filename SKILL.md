@@ -357,7 +357,9 @@ Styling is controlled through `App.css` classes: `.legend-items`, `.legend-item`
 
 Common pattern
 
-- Use `onItemClick` + `activeKey` to build interactive controls. For example, in `NormalizedBarChart` clicking a legend item orders the bar groups by that energy source in descending order; clicking the same legend item again clears the ordering and reverts to the default sort.
+- Use `onItemClick` + `activeKey` to build interactive controls. For example:
+  - In `NormalizedBarChart`, clicking a legend item orders the bar groups by that energy source in descending order; clicking the same legend item again clears the ordering and reverts to the default sort.
+  - In `StackedAreaChart` (area stacks over time), clicking a legend item highlights that series and visually de-emphasizes the others by applying `.area-layer.highlight` and `.area-layer.dimmed` CSS classes. Clicking the same legend item again clears the highlight and restores the default appearance.
 
 Accessibility
 

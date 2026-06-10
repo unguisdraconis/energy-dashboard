@@ -7,7 +7,7 @@ import { cssVar } from "../utils/cssVar";
 import { ENERGY_SOURCES, ENERGY_COLORS, ENERGY_LABELS } from "../colorPalette";
 import { getCountries, getCountryData } from "../data";
 
-function StackedAreaSVG({ width, height, country, onTooltip }) {
+function StackedAreaSVG({ width, height, country, onTooltip, highlightKey }) {
   const svgRef = useRef(null);
 
   useEffect(() => {
@@ -68,10 +68,19 @@ function StackedAreaSVG({ width, height, country, onTooltip }) {
     g.selectAll(".area-layer")
       .data(series)
       .join("path")
-      .attr("class", "area-layer")
+      .attr(
+        "class",
+        (d) =>
+          `area-layer ${
+            highlightKey
+              ? d.key === highlightKey
+                ? "highlight"
+                : "dimmed"
+              : ""
+          }`,
+      )
       .attr("d", area)
-      .attr("fill", (d) => ENERGY_COLORS[d.key])
-      .attr("opacity", 0.85);
+      .attr("fill", (d) => ENERGY_COLORS[d.key]);
 
     // X axis
     const tickCount = w < 300 ? 4 : w < 500 ? 6 : 8;
@@ -170,7 +179,7 @@ function StackedAreaSVG({ width, height, country, onTooltip }) {
         crosshair.style("display", "none");
         onTooltip(null);
       });
-  }, [width, height, country, onTooltip]);
+  }, [width, height, country, onTooltip, highlightKey]);
 
   return <svg ref={svgRef} width={width} height={height} />;
 }
@@ -178,6 +187,7 @@ function StackedAreaSVG({ width, height, country, onTooltip }) {
 export function StackedAreaChart() {
   const countries = getCountries();
   const [country, setCountry] = useState("World");
+  const [highlightKey, setHighlightKey] = useState(null);
   const [tooltip, setTooltip] = useState(null);
 
   const legendItems = ENERGY_SOURCES.map((src) => ({
@@ -185,6 +195,10 @@ export function StackedAreaChart() {
     color: ENERGY_COLORS[src],
     label: ENERGY_LABELS[src],
   }));
+
+  const handleLegendClick = (key) => {
+    setHighlightKey((prev) => (prev === key ? null : key));
+  };
 
   return (
     <ResponsiveChartWrapper
@@ -202,7 +216,13 @@ export function StackedAreaChart() {
           ))}
         </select>
       }
-      legend={<ChartLegend items={legendItems} />}
+      legend={
+        <ChartLegend
+          items={legendItems}
+          onItemClick={handleLegendClick}
+          activeKey={highlightKey}
+        />
+      }
     >
       {({ width, height }) => (
         <>
@@ -211,6 +231,7 @@ export function StackedAreaChart() {
             height={height}
             country={country}
             onTooltip={setTooltip}
+            highlightKey={highlightKey}
           />
           {tooltip && (
             <ChartTooltip
