@@ -1,4 +1,5 @@
 import { useRef, useEffect, useState, useCallback } from "react";
+import { useReducedMotion } from "motion/react";
 import * as d3 from "d3";
 import { ResponsiveChartWrapper } from "./ResponsiveChartWrapper";
 import { ChartTooltip } from "./ChartTooltip";
@@ -9,12 +10,18 @@ import { data, getCountries, getYearRange } from "../data";
 
 function NormalizedBarSVG({ width, height, year, onTooltip, orderBy }) {
   const svgRef = useRef(null);
+  const prefersReducedMotion = useReducedMotion();
 
   useEffect(() => {
     if (!width || !height) return;
 
+    const transitionDuration = prefersReducedMotion ? 0 : 900;
+    const chartTransition = transitionDuration
+      ? d3.transition().duration(transitionDuration).ease(d3.easeCubicInOut)
+      : null;
+
     const svg = d3.select(svgRef.current);
-    svg.selectAll("*").remove();
+    svg.selectAll("*").interrupt();
 
     const axisColor = cssVar("--chart-axis");
     const textColor = cssVar("--chart-text");
@@ -60,62 +67,141 @@ function NormalizedBarSVG({ width, height, year, onTooltip, orderBy }) {
 
     const x = d3.scaleLinear().domain([0, 100]).range([0, w]);
 
-    const g = svg
-      .append("g")
-      .attr("transform", `translate(${margin.left},${margin.top})`);
+    const root = svg.select("g.chart-root");
+    const chart = root.empty()
+      ? svg.append("g").classed("chart-root", true)
+      : root;
+    chart.attr("transform", `translate(${margin.left},${margin.top})`);
 
-    // Stacked bars — store data on each rect for tooltip lookup
+    const chartGroup = chart
+      .selectAll("g.chart-group")
+      .data([null])
+      .join("g")
+      .classed("chart-group", true);
+
+    const barsData = [];
     yearData.forEach((row) => {
       let cumulative = 0;
       ENERGY_SOURCES.forEach((src) => {
         const val = row[src];
         if (val > 0.1) {
-          g.append("rect")
-            .attr("x", x(cumulative))
-            .attr("y", y(row.country))
-            .attr("width", Math.max(0, x(val) - x(0)))
-            .attr("height", y.bandwidth())
-            .attr("fill", ENERGY_COLORS[src])
-            .attr("opacity", 0.85)
-            .datum({ country: row.country, src, val, total: row.total });
+          barsData.push({
+            country: row.country,
+            src,
+            val,
+            total: row.total,
+            x0: cumulative,
+            x1: cumulative + val,
+          });
         }
         cumulative += val;
       });
     });
 
-    // Y axis (country names)
-    g.append("g")
-      .call(d3.axisLeft(y).tickSize(0))
-      .call((g) => g.select(".domain").remove())
-      .call((g) =>
-        g
-          .selectAll(".tick text")
-          .attr("fill", textColor)
-          .attr("font-size", y.bandwidth() < 16 ? "8px" : "10px"),
-      );
+    const bars = chartGroup.selectAll("rect.bar-segment").data(
+      barsData,
+      (d) => `${d.country}-${d.src}`,
+    );
 
-    // X axis
-    g.append("g")
-      .attr("transform", `translate(0,${h})`)
-      .call(
-        d3
-          .axisBottom(x)
-          .ticks(5)
-          .tickFormat((d) => `${d}%`),
-      )
-      .call((g) => g.select(".domain").attr("stroke", axisColor))
-      .call((g) => g.selectAll(".tick line").attr("stroke", axisColor))
-      .call((g) =>
-        g
-          .selectAll(".tick text")
-          .attr("fill", textColor)
-          .attr("font-size", "10px"),
-      );
+    const barsEnter = bars
+      .enter()
+      .append("rect")
+      .classed("bar-segment", true)
+      .attr("fill", (d) => ENERGY_COLORS[d.src])
+      .attr("opacity", 0.85)
+      .attr("x", (d) => x(d.x0))
+      .attr("y", (d) => y(d.country))
+      .attr("width", 0)
+      .attr("height", y.bandwidth())
+      .datum((d) => d);
 
-    // Tooltip interaction on bar segments
-    g.selectAll("rect[fill]")
-      .on("mousemove", function (event) {
-        const d = d3.select(this).datum();
+    const barsMerge = barsEnter.merge(bars);
+    const barsTransition = chartTransition
+      ? barsMerge.transition(chartTransition)
+      : barsMerge;
+
+    barsTransition
+      .attr("fill", (d) => ENERGY_COLORS[d.src])
+      .attr("opacity", 0.85)
+      .attr("y", (d) => y(d.country))
+      .attr("height", y.bandwidth())
+      .attr("x", (d) => x(d.x0))
+      .attr("width", (d) => Math.max(0, x(d.x1) - x(d.x0)));
+
+    const barsExit = bars.exit();
+    if (chartTransition) {
+      barsExit.transition(chartTransition).attr("width", 0).remove();
+    } else {
+      barsExit.remove();
+    }
+
+    const yAxisGroup = chartGroup
+      .selectAll("g.y-axis")
+      .data([null])
+      .join("g")
+      .classed("y-axis", true);
+
+    const xAxisGroup = chartGroup
+      .selectAll("g.x-axis")
+      .data([null])
+      .join("g")
+      .classed("x-axis", true)
+      .attr("transform", `translate(0,${h})`);
+
+    const yAxisFn = d3.axisLeft(y).tickSize(0);
+    const xAxisFn = d3
+      .axisBottom(x)
+      .ticks(5)
+      .tickFormat((d) => `${d}%`);
+
+    if (chartTransition) {
+      yAxisGroup
+        .transition(chartTransition)
+        .call(yAxisFn)
+        .call((g) => g.select(".domain").remove())
+        .call((g) =>
+          g
+            .selectAll(".tick text")
+            .attr("fill", textColor)
+            .attr("font-size", y.bandwidth() < 16 ? "8px" : "10px"),
+        );
+
+      xAxisGroup
+        .transition(chartTransition)
+        .call(xAxisFn)
+        .call((g) => g.select(".domain").attr("stroke", axisColor))
+        .call((g) => g.selectAll(".tick line").attr("stroke", axisColor))
+        .call((g) =>
+          g
+            .selectAll(".tick text")
+            .attr("fill", textColor)
+            .attr("font-size", "10px"),
+        );
+    } else {
+      yAxisGroup
+        .call(yAxisFn)
+        .call((g) => g.select(".domain").remove())
+        .call((g) =>
+          g
+            .selectAll(".tick text")
+            .attr("fill", textColor)
+            .attr("font-size", y.bandwidth() < 16 ? "8px" : "10px"),
+        );
+
+      xAxisGroup
+        .call(xAxisFn)
+        .call((g) => g.select(".domain").attr("stroke", axisColor))
+        .call((g) => g.selectAll(".tick line").attr("stroke", axisColor))
+        .call((g) =>
+          g
+            .selectAll(".tick text")
+            .attr("fill", textColor)
+            .attr("font-size", "10px"),
+        );
+    }
+
+    barsMerge
+      .on("mousemove", function (event, d) {
         if (!d || !d.src) return;
 
         const [mx, my] = d3.pointer(event, svg.node());
@@ -135,7 +221,7 @@ function NormalizedBarSVG({ width, height, year, onTooltip, orderBy }) {
         });
       })
       .on("mouseleave", () => onTooltip(null));
-  }, [width, height, year, onTooltip, orderBy]);
+  }, [width, height, year, onTooltip, orderBy, prefersReducedMotion]);
 
   return <svg ref={svgRef} width={width} height={height} />;
 }

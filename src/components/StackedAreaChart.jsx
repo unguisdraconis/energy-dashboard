@@ -1,4 +1,5 @@
 import { useRef, useEffect, useState } from "react";
+import { useReducedMotion } from "motion/react";
 import * as d3 from "d3";
 import { ResponsiveChartWrapper } from "./ResponsiveChartWrapper";
 import { ChartTooltip } from "./ChartTooltip";
@@ -9,12 +10,18 @@ import { getCountries, getCountryData } from "../data";
 
 function StackedAreaSVG({ width, height, country, onTooltip, highlightKey }) {
   const svgRef = useRef(null);
+  const prefersReducedMotion = useReducedMotion();
 
   useEffect(() => {
     if (!width || !height) return;
 
+    const transitionDuration = prefersReducedMotion ? 0 : 900;
+    const chartTransition = transitionDuration
+      ? d3.transition().duration(transitionDuration).ease(d3.easeCubicInOut)
+      : null;
+
     const svg = d3.select(svgRef.current);
-    svg.selectAll("*").remove();
+    svg.selectAll("*").interrupt();
 
     const axisColor = cssVar("--chart-axis");
     const textColor = cssVar("--chart-text");
@@ -54,20 +61,76 @@ function StackedAreaSVG({ width, height, country, onTooltip, highlightKey }) {
       .nice()
       .range([h, 0]);
 
-    const g = svg
-      .append("g")
-      .attr("transform", `translate(${margin.left},${margin.top})`);
+    const bisect = d3.bisector((d) => d.year).left;
 
-    const area = d3
+    const root = svg.select("g.chart-root");
+    const chart = root.empty()
+      ? svg.append("g").classed("chart-root", true)
+      : root;
+    chart.attr("transform", `translate(${margin.left},${margin.top})`);
+
+    const layersGroup = chart
+      .selectAll("g.layers")
+      .data([null])
+      .join("g")
+      .classed("layers", true);
+
+    const xAxisGroup = chart
+      .selectAll("g.x-axis")
+      .data([null])
+      .join("g")
+      .classed("x-axis", true)
+      .attr("transform", `translate(0,${h})`);
+
+    const yAxisGroup = chart
+      .selectAll("g.y-axis")
+      .data([null])
+      .join("g")
+      .classed("y-axis", true);
+
+    chart
+      .selectAll("text.y-label")
+      .data([null])
+      .join("text")
+      .classed("y-label", true)
+      .attr("transform", "rotate(-90)")
+      .attr("x", -h / 2)
+      .attr("y", -40)
+      .attr("text-anchor", "middle")
+      .attr("fill", textColor)
+      .attr("font-size", "10px")
+      .text("TWh");
+
+    const areaGenerator = d3
       .area()
       .x((d) => x(d.data.year))
       .y0((d) => y(d[0]))
       .y1((d) => y(d[1]))
       .curve(d3.curveMonotoneX);
 
-    g.selectAll(".area-layer")
-      .data(series)
-      .join("path")
+    const baseline = d3
+      .area()
+      .x((d) => x(d.data.year))
+      .y0(h)
+      .y1(h)
+      .curve(d3.curveMonotoneX);
+
+    const layerSelection = layersGroup
+      .selectAll("path.area-layer")
+      .data(series, (d) => d.key);
+
+    const layerEnter = layerSelection
+      .enter()
+      .append("path")
+      .attr("fill", (d) => ENERGY_COLORS[d.key])
+      .attr("d", baseline);
+
+    const layerMerge = layerEnter.merge(layerSelection);
+    const layerTransition = chartTransition
+      ? layerMerge.transition(chartTransition)
+      : layerMerge;
+
+    layerTransition
       .attr(
         "class",
         (d) =>
@@ -79,56 +142,84 @@ function StackedAreaSVG({ width, height, country, onTooltip, highlightKey }) {
               : ""
           }`,
       )
-      .attr("d", area)
-      .attr("fill", (d) => ENERGY_COLORS[d.key]);
-
-    // X axis
-    const tickCount = w < 300 ? 4 : w < 500 ? 6 : 8;
-    g.append("g")
-      .attr("transform", `translate(0,${h})`)
-      .call(d3.axisBottom(x).ticks(tickCount).tickFormat(d3.format("d")))
-      .call((g) => g.select(".domain").attr("stroke", axisColor))
-      .call((g) => g.selectAll(".tick line").attr("stroke", axisColor))
-      .call((g) =>
-        g
-          .selectAll(".tick text")
-          .attr("fill", textColor)
-          .attr("font-size", "11px"),
-      );
-
-    // Y axis
-    g.append("g")
-      .call(
-        d3
-          .axisLeft(y)
-          .ticks(5)
-          .tickFormat((d) => {
-            if (d >= 1000) return `${d / 1000}k`;
-            return d;
-          }),
+      .attr("fill", (d) => ENERGY_COLORS[d.key])
+      .attr("opacity", (d) =>
+        highlightKey ? (d.key === highlightKey ? 1 : 0.35) : 0.85,
       )
-      .call((g) => g.select(".domain").attr("stroke", axisColor))
-      .call((g) => g.selectAll(".tick line").attr("stroke", axisColor))
-      .call((g) =>
-        g
-          .selectAll(".tick text")
-          .attr("fill", textColor)
-          .attr("font-size", "11px"),
-      );
+      .attr("d", areaGenerator);
 
-    // Y label
-    g.append("text")
-      .attr("transform", "rotate(-90)")
-      .attr("x", -h / 2)
-      .attr("y", -40)
-      .attr("text-anchor", "middle")
-      .attr("fill", textColor)
-      .attr("font-size", "10px")
-      .text("TWh");
+    const layerExit = layerSelection.exit();
+    if (chartTransition) {
+      layerExit.transition(chartTransition).attr("opacity", 0).remove();
+    } else {
+      layerExit.remove();
+    }
 
-    // Crosshair line (SVG — this stays in D3 since it's part of the chart drawing)
-    const crosshair = g
-      .append("line")
+    const xAxisFn = d3
+      .axisBottom(x)
+      .ticks(w < 300 ? 4 : w < 500 ? 6 : 8)
+      .tickFormat(d3.format("d"));
+    const yAxisFn = d3
+      .axisLeft(y)
+      .ticks(5)
+      .tickFormat((d) => {
+        if (d >= 1000) return `${d / 1000}k`;
+        return d;
+      });
+
+    if (chartTransition) {
+      xAxisGroup
+        .transition(chartTransition)
+        .call(xAxisFn)
+        .call((g) => g.select(".domain").attr("stroke", axisColor))
+        .call((g) => g.selectAll(".tick line").attr("stroke", axisColor))
+        .call((g) =>
+          g
+            .selectAll(".tick text")
+            .attr("fill", textColor)
+            .attr("font-size", "11px"),
+        );
+
+      yAxisGroup
+        .transition(chartTransition)
+        .call(yAxisFn)
+        .call((g) => g.select(".domain").attr("stroke", axisColor))
+        .call((g) => g.selectAll(".tick line").attr("stroke", axisColor))
+        .call((g) =>
+          g
+            .selectAll(".tick text")
+            .attr("fill", textColor)
+            .attr("font-size", "11px"),
+        );
+    } else {
+      xAxisGroup
+        .call(xAxisFn)
+        .call((g) => g.select(".domain").attr("stroke", axisColor))
+        .call((g) => g.selectAll(".tick line").attr("stroke", axisColor))
+        .call((g) =>
+          g
+            .selectAll(".tick text")
+            .attr("fill", textColor)
+            .attr("font-size", "11px"),
+        );
+
+      yAxisGroup
+        .call(yAxisFn)
+        .call((g) => g.select(".domain").attr("stroke", axisColor))
+        .call((g) => g.selectAll(".tick line").attr("stroke", axisColor))
+        .call((g) =>
+          g
+            .selectAll(".tick text")
+            .attr("fill", textColor)
+            .attr("font-size", "11px"),
+        );
+    }
+
+    const crosshair = chart
+      .selectAll("line.crosshair")
+      .data([null])
+      .join("line")
+      .classed("crosshair", true)
       .attr("y1", 0)
       .attr("y2", h)
       .attr("stroke", crosshairColor)
@@ -136,11 +227,11 @@ function StackedAreaSVG({ width, height, country, onTooltip, highlightKey }) {
       .attr("stroke-dasharray", "3,3")
       .style("display", "none");
 
-    const bisect = d3.bisector((d) => d.year).left;
-
-    // Hover overlay — D3 handles mouse, React renders tooltip
     svg
-      .append("rect")
+      .selectAll("rect.hover-overlay")
+      .data([null])
+      .join("rect")
+      .classed("hover-overlay", true)
       .attr("transform", `translate(${margin.left},${margin.top})`)
       .attr("width", w)
       .attr("height", h)
@@ -179,7 +270,7 @@ function StackedAreaSVG({ width, height, country, onTooltip, highlightKey }) {
         crosshair.style("display", "none");
         onTooltip(null);
       });
-  }, [width, height, country, onTooltip, highlightKey]);
+  }, [width, height, country, onTooltip, highlightKey, prefersReducedMotion]);
 
   return <svg ref={svgRef} width={width} height={height} />;
 }

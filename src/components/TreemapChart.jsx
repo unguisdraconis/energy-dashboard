@@ -1,4 +1,5 @@
 import { useRef, useEffect, useState, useCallback } from "react";
+import { useReducedMotion } from "motion/react";
 import * as d3 from "d3";
 import { ResponsiveChartWrapper } from "./ResponsiveChartWrapper";
 import { ChartTooltip } from "./ChartTooltip";
@@ -60,12 +61,18 @@ function pathFromPolygon(polygon) {
 
 function TreemapSVG({ width, height, year, onTooltip }) {
   const svgRef = useRef(null);
+  const prefersReducedMotion = useReducedMotion();
 
   useEffect(() => {
     if (!width || !height) return;
 
+    const transitionDuration = prefersReducedMotion ? 0 : 900;
+    const chartTransition = transitionDuration
+      ? d3.transition().duration(transitionDuration).ease(d3.easeCubicInOut)
+      : null;
+
     const svg = d3.select(svgRef.current);
-    svg.selectAll("*").remove();
+    svg.selectAll("*").interrupt();
 
     const textColor = cssVar("--chart-text");
     const axisColor = cssVar("--chart-axis");
@@ -79,11 +86,17 @@ function TreemapSVG({ width, height, year, onTooltip }) {
     const h = height - margin.top - margin.bottom;
     if (w <= 0 || h <= 0) return;
 
-    const root = svg
-      .append("g")
-      .attr("transform", `translate(${margin.left},${margin.top})`);
-    root
-      .append("rect")
+    const root = svg.select("g.chart-root");
+    const chart = root.empty()
+      ? svg.append("g").classed("chart-root", true)
+      : root;
+    chart.attr("transform", `translate(${margin.left},${margin.top})`);
+
+    chart
+      .selectAll("rect.background")
+      .data([null])
+      .join("rect")
+      .classed("background", true)
       .attr("x", 0)
       .attr("y", 0)
       .attr("width", w)
@@ -109,75 +122,112 @@ function TreemapSVG({ width, height, year, onTooltip }) {
       })
       .filter((cell) => cell.polygon.length > 0);
 
-    const cellsGroup = root.append("g").attr("class", "voronoi-cells");
+    const cellsGroup = chart
+      .selectAll("g.voronoi-cells")
+      .data([null])
+      .join("g")
+      .classed("voronoi-cells", true);
 
-    cellsGroup
-      .selectAll("path")
-      .data(cells)
-      .join("path")
-      .attr("d", (d) => pathFromPolygon(d.polygon))
+    const cellSelection = cellsGroup
+      .selectAll("path.cell")
+      .data(cells, (d) => d.country);
+
+    const cellEnter = cellSelection
+      .enter()
+      .append("path")
+      .classed("cell", true)
       .attr("fill", (d) => ENERGY_COLORS[d.dominantSource])
       .attr("stroke", axisColor)
       .attr("stroke-width", 1)
-      .attr("opacity", 0.96)
-      .on("mousemove", function (event, d) {
-        const [mx, my] = d3.pointer(event, svg.node());
-        const total = d.total;
-        onTooltip({
-          x: mx,
-          y: my,
-          title: d.country,
-          rows: [
-            {
-              key: `${d.country}-total`,
-              label: "Total energy",
-              color: ENERGY_COLORS[d.dominantSource],
-              value: `${total.toLocaleString()} TWh`,
-            },
-            ...d.sources.slice(0, 3).map((source) => ({
-              key: `${d.country}-${source.source}`,
-              label: ENERGY_LABELS[source.source],
-              color: ENERGY_COLORS[source.source],
-              value: `${source.value.toLocaleString()} TWh`,
-            })),
-          ],
-        });
-      })
-      .on("mouseleave", () => onTooltip(null));
+      .attr("opacity", 0)
+      .attr("d", (d) => pathFromPolygon(d.polygon));
 
-    cells
-      .filter((cell) => Math.abs(d3.polygonArea(cell.polygon)) > 700)
-      .forEach((cell) => {
-        const centroid = d3.polygonCentroid(cell.polygon);
-        const bounds = cell.polygon.reduce(
-          (acc, point) => {
-            return {
-              x0: Math.min(acc.x0, point[0]),
-              y0: Math.min(acc.y0, point[1]),
-              x1: Math.max(acc.x1, point[0]),
-              y1: Math.max(acc.y1, point[1]),
-            };
-          },
-          { x0: Infinity, y0: Infinity, x1: -Infinity, y1: -Infinity },
-        );
+    const cellMerge = cellEnter.merge(cellSelection);
+    const cellTransition = chartTransition
+      ? cellMerge.transition(chartTransition)
+      : cellMerge;
 
-        const widthBox = bounds.x1 - bounds.x0;
-        const heightBox = bounds.y1 - bounds.y0;
-        if (widthBox < 60 || heightBox < 24) return;
+    cellTransition
+      .attr("fill", (d) => ENERGY_COLORS[d.dominantSource])
+      .attr("stroke", axisColor)
+      .attr("d", (d) => pathFromPolygon(d.polygon))
+      .attr("opacity", 0.96);
 
-        root
-          .append("text")
-          .attr("x", centroid[0])
-          .attr("y", centroid[1])
-          .attr("fill", textColor)
-          .attr("font-size", "11px")
-          .attr("font-weight", 700)
-          .attr("text-anchor", "middle")
-          .attr("alignment-baseline", "middle")
-          .style("pointer-events", "none")
-          .text(cell.country);
-      });
-  }, [width, height, year, onTooltip]);
+    const cellExit = cellSelection.exit();
+    if (chartTransition) {
+      cellExit.transition(chartTransition).attr("opacity", 0).remove();
+    } else {
+      cellExit.remove();
+    }
+
+    const labelData = cells.filter((cell) =>
+      Math.abs(d3.polygonArea(cell.polygon)) > 700,
+    );
+
+    const labelSelection = chart
+      .selectAll("text.cell-label")
+      .data(labelData, (d) => d.country);
+
+    const labelEnter = labelSelection
+      .enter()
+      .append("text")
+      .classed("cell-label", true)
+      .attr("fill", textColor)
+      .attr("font-size", "11px")
+      .attr("font-weight", 700)
+      .attr("text-anchor", "middle")
+      .attr("alignment-baseline", "middle")
+      .style("pointer-events", "none")
+      .attr("opacity", 0)
+      .text((d) => d.country);
+
+    const labelMerge = labelEnter.merge(labelSelection);
+    const labelTransition = chartTransition
+      ? labelMerge.transition(chartTransition)
+      : labelMerge;
+
+    labelTransition
+      .attr("x", (d) => d3.polygonCentroid(d.polygon)[0])
+      .attr("y", (d) => d3.polygonCentroid(d.polygon)[1])
+      .attr("opacity", 1);
+
+    const labelExit = labelSelection.exit();
+    if (chartTransition) {
+      labelExit.transition(chartTransition).attr("opacity", 0).remove();
+    } else {
+      labelExit.remove();
+    }
+
+    const applyTooltip = (selection) => {
+      selection
+        .on("mousemove", function (event, d) {
+          const [mx, my] = d3.pointer(event, svg.node());
+          const total = d.total;
+          onTooltip({
+            x: mx,
+            y: my,
+            title: d.country,
+            rows: [
+              {
+                key: `${d.country}-total`,
+                label: "Total energy",
+                color: ENERGY_COLORS[d.dominantSource],
+                value: `${total.toLocaleString()} TWh`,
+              },
+              ...d.sources.slice(0, 3).map((source) => ({
+                key: `${d.country}-${source.source}`,
+                label: ENERGY_LABELS[source.source],
+                color: ENERGY_COLORS[source.source],
+                value: `${source.value.toLocaleString()} TWh`,
+              })),
+            ],
+          });
+        })
+        .on("mouseleave", () => onTooltip(null));
+    };
+
+    applyTooltip(cellMerge);
+  }, [width, height, year, onTooltip, prefersReducedMotion]);
 
   return <svg ref={svgRef} width={width} height={height} />;
 }
