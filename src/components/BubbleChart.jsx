@@ -72,7 +72,7 @@ function getLabelCountries(bubbleData) {
   return Object.values(largest);
 }
 
-function BubbleSVG({ width, height, year, isLog, onTooltip }) {
+function BubbleSVG({ width, height, year, isLog, onTooltip, rScale }) {
   const svgRef = useRef(null);
 
   useEffect(() => {
@@ -117,10 +117,12 @@ function BubbleSVG({ width, height, year, isLog, onTooltip }) {
       .range([h, 0])
       .nice();
 
-    const r = d3
-      .scaleSqrt()
-      .domain(energyExtent)
-      .range([3, Math.min(w, h) * 0.08]);
+    const r =
+      rScale ||
+      d3
+        .scaleSqrt()
+        .domain(energyExtent)
+        .range([3, Math.min(w, h) * 0.08]);
 
     const g = svg
       .append("g")
@@ -382,7 +384,7 @@ function BubbleSVG({ width, height, year, isLog, onTooltip }) {
         });
       })
       .on("mouseleave", () => onTooltip(null));
-  }, [width, height, year, isLog, onTooltip]);
+  }, [width, height, year, isLog, onTooltip, rScale]);
 
   return <svg ref={svgRef} width={width} height={height} />;
 }
@@ -428,39 +430,55 @@ export function BubbleChart() {
       }
       legend={<ChartLegend items={legendItems} />}
     >
-      {({ width, height }) => (
-        <>
-          <BubbleSVG
-            width={width}
-            height={height}
-            year={year}
-            isLog={isLog}
-            onTooltip={handleTooltip}
-          />
-          {tooltip && (
-            <ChartTooltip
-              x={tooltip.x}
-              y={tooltip.y}
-              containerWidth={width}
-              containerHeight={height}
-            >
-              <div className="tooltip-title">{tooltip.title}</div>
-              {tooltip.rows.map((row) => (
-                <div key={row.key} className="tooltip-row">
-                  <span
-                    className="tooltip-swatch"
-                    style={{ background: row.color }}
-                  />
-                  <span className="tooltip-label">{row.label}</span>
-                  <span className="tooltip-value" style={{ color: row.color }}>
-                    {row.value}
-                  </span>
-                </div>
-              ))}
-            </ChartTooltip>
-          )}
-        </>
-      )}
+      {({ width, height }) => {
+        const bubbleData = getBubbleData(year);
+        const energyExtent = d3.extent(bubbleData, (d) => d.energy);
+        const rScale = d3
+          .scaleSqrt()
+          .domain(energyExtent)
+          .range([3, Math.min(width, height) * 0.08]);
+
+        return (
+          <>
+            <BubbleSVG
+              width={width}
+              height={height}
+              year={year}
+              isLog={isLog}
+              onTooltip={handleTooltip}
+              rScale={rScale}
+            />
+
+            {/* Bubble size legend removed per request; BubbleLegend component preserved in src/components/BubbleLegend.jsx */}
+
+            {tooltip && (
+              <ChartTooltip
+                x={tooltip.x}
+                y={tooltip.y}
+                containerWidth={width}
+                containerHeight={height}
+              >
+                <div className="tooltip-title">{tooltip.title}</div>
+                {tooltip.rows.map((row) => (
+                  <div key={row.key} className="tooltip-row">
+                    <span
+                      className="tooltip-swatch"
+                      style={{ background: row.color }}
+                    />
+                    <span className="tooltip-label">{row.label}</span>
+                    <span
+                      className="tooltip-value"
+                      style={{ color: row.color }}
+                    >
+                      {row.value}
+                    </span>
+                  </div>
+                ))}
+              </ChartTooltip>
+            )}
+          </>
+        );
+      }}
     </ResponsiveChartWrapper>
   );
 }

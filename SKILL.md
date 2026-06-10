@@ -366,6 +366,15 @@ Accessibility
 - Keyboard: items are focusable and trigger `onItemClick` with Enter/Space.
 - Screen readers: `role="button"` and `aria-pressed` are used so assistive tech can expose the toggle state.
 
+#### Bubble chart size legend (preferred)
+
+For bubble charts we prefer a compact, upper-right size legend that shows sample circle sizes and numeric ticks. The project includes a small helper (inline in `BubbleChart` or as a separate `BubbleLegend` component) with this API:
+
+- Props: `scale` (a d3 continuous scale mapping value → radius) and `tickNumber` (suggested number of ticks).
+- Behavior: the legend computes `ticks = scale.ticks(tickNumber)`, renders concentric circles for each tick and dashed leader lines with labels, and uses UI tokens (e.g., `--chart-text`) for stroke/text color.
+
+Placement: render the legend as an overlay in the chart SVG wrapper, positioned top-right via a CSS class such as `.bubble-legend-wrapper`. Styling and spacing are controlled from `App.css` so the CSS tokens remain the source of truth.
+
 ### 6.3 `<CountryToggles>` — Multi-select toggle buttons
 
 Location: `src/components/CountryToggles.jsx`
