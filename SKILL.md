@@ -336,15 +336,33 @@ const items = [
   // ...
 ];
 
-<ChartLegend items={items} />;
+// Interactive usage: provide an onItemClick handler and an activeKey
+<ChartLegend items={items} onItemClick={handleClick} activeKey={active} />;
 ```
 
 Props:
 | Prop | Type | Description |
 |---|---|---|
 | `items` | `Array<{ key, color, label }>` | Legend entries |
+| `onItemClick` | `(key: string) => void` (optional) | If provided, legend entries become clickable buttons and this handler is called with the entry `key` when activated (click or Enter/Space). |
+| `activeKey` | `string  null` (optional) | If provided, the matching legend item receives an `active` state (CSS class) so it can be visually highlighted. |
 
-Renders a flex-wrap row of color swatches + labels. Styled by `.legend-items`, `.legend-item`, `.legend-swatch`, `.legend-label` in `App.css`.
+Renders a flex-wrap row of color swatches + labels. When `onItemClick` is present the component:
+
+- Renders items with `role="button"`, `tabIndex=0`, and supports keyboard activation (Enter / Space).
+- Emits `onItemClick(key)` on click or keyboard activation.
+- Sets `aria-pressed` to reflect the `activeKey` state for accessible toggling semantics.
+
+Styling is controlled through `App.css` classes: `.legend-items`, `.legend-item`, `.legend-swatch`, `.legend-label`, and an `.active` modifier for the selected item.
+
+Common pattern
+
+- Use `onItemClick` + `activeKey` to build interactive controls. For example, in `NormalizedBarChart` clicking a legend item orders the bar groups by that energy source in descending order; clicking the same legend item again clears the ordering and reverts to the default sort.
+
+Accessibility
+
+- Keyboard: items are focusable and trigger `onItemClick` with Enter/Space.
+- Screen readers: `role="button"` and `aria-pressed` are used so assistive tech can expose the toggle state.
 
 ### 6.3 `<CountryToggles>` — Multi-select toggle buttons
 

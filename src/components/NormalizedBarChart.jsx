@@ -7,7 +7,7 @@ import { cssVar } from "../utils/cssVar";
 import { ENERGY_SOURCES, ENERGY_COLORS, ENERGY_LABELS } from "../colorPalette";
 import { data, getCountries, getYearRange } from "../data";
 
-function NormalizedBarSVG({ width, height, year, onTooltip }) {
+function NormalizedBarSVG({ width, height, year, onTooltip, orderBy }) {
   const svgRef = useRef(null);
 
   useEffect(() => {
@@ -37,6 +37,9 @@ function NormalizedBarSVG({ width, height, year, onTooltip }) {
       })
       .filter(Boolean)
       .sort((a, b) => {
+        if (orderBy) {
+          return b[orderBy] - a[orderBy];
+        }
         const fossilA = a.coal + a.oil + a.gas;
         const fossilB = b.coal + b.oil + b.gas;
         return fossilB - fossilA;
@@ -132,7 +135,7 @@ function NormalizedBarSVG({ width, height, year, onTooltip }) {
         });
       })
       .on("mouseleave", () => onTooltip(null));
-  }, [width, height, year, onTooltip]);
+  }, [width, height, year, onTooltip, orderBy]);
 
   return <svg ref={svgRef} width={width} height={height} />;
 }
@@ -140,6 +143,7 @@ function NormalizedBarSVG({ width, height, year, onTooltip }) {
 export function NormalizedBarChart() {
   const [minYear, maxYear] = getYearRange();
   const [year, setYear] = useState(2024);
+  const [orderBy, setOrderBy] = useState(null);
   const [tooltip, setTooltip] = useState(null);
 
   const handleTooltip = useCallback((val) => setTooltip(val), []);
@@ -149,6 +153,10 @@ export function NormalizedBarChart() {
     color: ENERGY_COLORS[src],
     label: ENERGY_LABELS[src],
   }));
+
+  const handleLegendClick = useCallback((key) => {
+    setOrderBy((prev) => (prev === key ? null : key));
+  }, []);
 
   return (
     <ResponsiveChartWrapper
@@ -166,7 +174,13 @@ export function NormalizedBarChart() {
           <span className="year-label">{year}</span>
         </div>
       }
-      legend={<ChartLegend items={legendItems} />}
+      legend={
+        <ChartLegend
+          items={legendItems}
+          onItemClick={handleLegendClick}
+          activeKey={orderBy}
+        />
+      }
     >
       {({ width, height }) => (
         <>
@@ -175,6 +189,7 @@ export function NormalizedBarChart() {
             height={height}
             year={year}
             onTooltip={handleTooltip}
+            orderBy={orderBy}
           />
           {tooltip && (
             <ChartTooltip
