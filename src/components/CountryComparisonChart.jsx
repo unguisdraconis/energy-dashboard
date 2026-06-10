@@ -1,4 +1,5 @@
 import { useRef, useEffect, useState, useCallback } from "react";
+import { useReducedMotion } from "motion/react";
 import * as d3 from "d3";
 import { ResponsiveChartWrapper } from "./ResponsiveChartWrapper";
 import { ChartTooltip } from "./ChartTooltip";
@@ -17,6 +18,7 @@ const DEFAULT_COUNTRIES = [
 
 function ComparisonSVG({ width, height, selectedCountries, onTooltip }) {
   const svgRef = useRef(null);
+  const prefersReducedMotion = useReducedMotion();
 
   useEffect(() => {
     if (!width || !height) return;
@@ -28,6 +30,10 @@ function ComparisonSVG({ width, height, selectedCountries, onTooltip }) {
     const textColor = cssVar("--chart-text");
     const gridColor = cssVar("--chart-grid");
     const crosshairColor = cssVar("--chart-crosshair");
+    const transitionDuration = prefersReducedMotion ? 0 : 900;
+    const lineTransition = transitionDuration
+      ? d3.transition().duration(transitionDuration).ease(d3.easeCubicOut)
+      : null;
 
     const margin = { top: 10, right: 75, bottom: 30, left: 55 };
     const w = width - margin.left - margin.right;
@@ -79,14 +85,26 @@ function ComparisonSVG({ width, height, selectedCountries, onTooltip }) {
 
     countryData.forEach((c, i) => {
       const color = COUNTRY_PALETTE[i % COUNTRY_PALETTE.length];
-
-      g.append("path")
+      const path = g
+        .append("path")
         .datum(c.values)
         .attr("d", line)
         .attr("fill", "none")
         .attr("stroke", color)
         .attr("stroke-width", 2)
         .attr("opacity", 0.9);
+
+      if (!prefersReducedMotion) {
+        const pathNode = path.node();
+        if (pathNode) {
+          const totalLength = pathNode.getTotalLength();
+          path
+            .attr("stroke-dasharray", `${totalLength} ${totalLength}`)
+            .attr("stroke-dashoffset", totalLength)
+            .transition(lineTransition)
+            .attr("stroke-dashoffset", 0);
+        }
+      }
 
       // End label
       const last = c.values[c.values.length - 1];
@@ -230,6 +248,7 @@ export function CountryComparisonChart() {
   return (
     <ResponsiveChartWrapper
       title="Country Comparison — Total Energy"
+      animationKey={selected.join("|")}
       controls={
         <CountryToggles
           countries={allCountries}

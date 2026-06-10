@@ -1,4 +1,5 @@
 import { useRef, useEffect, useState, useCallback } from "react";
+import { useReducedMotion } from "motion/react";
 import * as d3 from "d3";
 import { ResponsiveChartWrapper } from "./ResponsiveChartWrapper";
 import { ChartTooltip } from "./ChartTooltip";
@@ -9,9 +10,14 @@ import { getCountries, getCountryData, getYearRange } from "../data";
 /** ----- Radar Chart ----- */
 function RadarSVG({ width, height, country, year, isLog, onTooltip }) {
   const svgRef = useRef(null);
+  const prefersReducedMotion = useReducedMotion();
 
   useEffect(() => {
     if (!width || !height) return;
+    const transitionDuration = prefersReducedMotion ? 0 : 900;
+    const lineTransition = transitionDuration
+      ? d3.transition().duration(transitionDuration).ease(d3.easeCubicOut)
+      : null;
 
     const svg = d3.select(svgRef.current);
     svg.selectAll("*").remove();
@@ -142,7 +148,8 @@ function RadarSVG({ width, height, country, year, isLog, onTooltip }) {
       .y((d) => d.y)
       .curve(d3.curveLinearClosed);
 
-    g.append("path")
+    const radarPath = g
+      .append("path")
       .datum(radarPoints)
       .attr("d", radarLine)
       .attr("fill", accentColor)
@@ -150,17 +157,41 @@ function RadarSVG({ width, height, country, year, isLog, onTooltip }) {
       .attr("stroke", accentColor)
       .attr("stroke-width", 2);
 
-    g.selectAll(".radar-point")
+    if (!prefersReducedMotion) {
+      const pathNode = radarPath.node();
+      if (pathNode) {
+        const totalLength = pathNode.getTotalLength();
+        radarPath
+          .attr("stroke-dasharray", `${totalLength} ${totalLength}`)
+          .attr("stroke-dashoffset", totalLength)
+          .transition(lineTransition)
+          .attr("stroke-dashoffset", 0);
+      }
+    }
+
+    const points = g
+      .selectAll(".radar-point")
       .data(radarPoints)
       .join("circle")
       .attr("class", "radar-point")
-      .attr("cx", (d) => d.x)
-      .attr("cy", (d) => d.y)
       .attr("r", 6)
       .attr("fill", (d) => ENERGY_COLORS[d.source])
       .attr("stroke", "#fff")
       .attr("stroke-width", 1.5)
-      .style("cursor", "pointer")
+      .style("cursor", "pointer");
+
+    if (!prefersReducedMotion) {
+      points
+        .attr("cx", cx)
+        .attr("cy", cy)
+        .transition(lineTransition)
+        .attr("cx", (d) => d.x)
+        .attr("cy", (d) => d.y);
+    } else {
+      points.attr("cx", (d) => d.x).attr("cy", (d) => d.y);
+    }
+
+    points
       .on("mouseenter", (event, d) => {
         const [x, y] = d3.pointer(event, svg.node());
         onTooltip({
@@ -184,7 +215,7 @@ function RadarSVG({ width, height, country, year, isLog, onTooltip }) {
         });
       })
       .on("mouseleave", () => onTooltip(null));
-  }, [width, height, country, year, isLog, onTooltip]);
+  }, [width, height, country, year, isLog, onTooltip, prefersReducedMotion]);
 
   return <svg ref={svgRef} width={width} height={height} />;
 }
@@ -210,6 +241,7 @@ export function RadarChart() {
   return (
     <ResponsiveChartWrapper
       title="Country Energy Mix Radar"
+      animationKey={`${country}-${year}-${isLog}`}
       controls={
         <>
           <select

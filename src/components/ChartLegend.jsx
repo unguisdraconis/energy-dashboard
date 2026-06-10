@@ -10,11 +10,18 @@
  *     { key: 'oil',  color: '#E69F00', label: 'Oil' },
  *   ]} />
  */
+import { motion, useReducedMotion } from "motion/react";
+
 export function ChartLegend({ items, onItemClick, activeKey }) {
+  const prefersReducedMotion = useReducedMotion();
+  const itemTransition = prefersReducedMotion
+    ? { duration: 0 }
+    : { duration: 0.2, ease: "easeOut" };
+
   return (
     <div className="legend-items">
       {items.map((item) => (
-        <div
+        <motion.div
           key={item.key}
           className={`legend-item ${activeKey === item.key ? "active" : ""}`}
           role={onItemClick ? "button" : undefined}
@@ -31,10 +38,13 @@ export function ChartLegend({ items, onItemClick, activeKey }) {
                 }
               : undefined
           }
+          whileHover={onItemClick ? { scale: 1.02 } : undefined}
+          animate={{ scale: 1 }}
+          transition={itemTransition}
         >
           <span className="legend-swatch" style={{ background: item.color }} />
           <span className="legend-label">{item.label}</span>
-        </div>
+        </motion.div>
       ))}
     </div>
   );

@@ -203,6 +203,7 @@ export function StackedAreaChart() {
   return (
     <ResponsiveChartWrapper
       title="Energy Mix Over Time"
+      animationKey={`${country}-${highlightKey || "all"}`}
       controls={
         <select
           className="chart-select"

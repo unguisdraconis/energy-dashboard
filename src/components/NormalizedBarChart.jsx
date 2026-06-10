@@ -161,6 +161,7 @@ export function NormalizedBarChart() {
   return (
     <ResponsiveChartWrapper
       title="Energy Mix by Country"
+      animationKey={`${year}-${orderBy || "none"}`}
       controls={
         <div className="year-slider-container">
           <input

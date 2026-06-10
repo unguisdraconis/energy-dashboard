@@ -1,4 +1,5 @@
 import "./App.css";
+import { motion, useReducedMotion } from "motion/react";
 import { StackedAreaChart } from "./components/StackedAreaChart";
 import { CountryComparisonChart } from "./components/CountryComparisonChart";
 import { NormalizedBarChart } from "./components/NormalizedBarChart";
@@ -7,9 +8,19 @@ import { TreemapChart } from "./components/TreemapChart";
 import { RadarChart } from "./components/RadarChart";
 
 function App() {
+  const prefersReducedMotion = useReducedMotion();
+  const motionTransition = prefersReducedMotion
+    ? { duration: 0 }
+    : { duration: 0.35, ease: "easeOut" };
+
   return (
     <>
-      <header className="dashboard-header">
+      <motion.header
+        className="dashboard-header"
+        initial={{ y: 18 }}
+        animate={{ y: 0 }}
+        transition={motionTransition}
+      >
         <h1>🌍 Global Energy Dashboard</h1>
         <p className="subtitle">
           How the world's energy mix has evolved over 60 years (1965–2024)
@@ -28,7 +39,7 @@ function App() {
           source, and the Radar Chart allows us to visualize the imbalanced
           energy profiles of different countries.
         </p>
-      </header>
+      </motion.header>
       <main className="dashboard-grid">
         <StackedAreaChart />
         <CountryComparisonChart />
@@ -37,7 +48,12 @@ function App() {
         <TreemapChart />
         <RadarChart />
       </main>
-      <footer className="dashboard-footer">
+      <motion.footer
+        className="dashboard-footer"
+        initial={{ y: 12 }}
+        animate={{ y: 0 }}
+        transition={motionTransition}
+      >
         <p className="data-source">
           Source: Our World in Data · Energy consumption by source (TWh) ·
           Scaffolding by Claude Opus 4.6 · Visualization by Jeremiah King as
@@ -64,7 +80,7 @@ function App() {
         >
           🔗
         </a>
-      </footer>
+      </motion.footer>
     </>
   );
 }

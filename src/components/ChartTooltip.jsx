@@ -1,4 +1,5 @@
 import { useRef, useLayoutEffect, useState } from "react";
+import { motion, useReducedMotion } from "motion/react";
 
 /**
  * ChartTooltip — reusable HTML tooltip overlay for charts.
@@ -27,6 +28,7 @@ export function ChartTooltip({
   containerHeight,
   children,
 }) {
+  const prefersReducedMotion = useReducedMotion();
   const ref = useRef(null);
   const [pos, setPos] = useState({ left: 0, top: 0 });
 
@@ -59,12 +61,15 @@ export function ChartTooltip({
   }, [x, y, containerWidth, containerHeight, children]);
 
   return (
-    <div
+    <motion.div
       ref={ref}
       className="chart-tooltip"
+      initial={{ scale: 0.96 }}
+      animate={{ scale: 1 }}
+      transition={prefersReducedMotion ? { duration: 0 } : { duration: 0.18 }}
       style={{ left: pos.left, top: pos.top }}
     >
       {children}
-    </div>
+    </motion.div>
   );
 }

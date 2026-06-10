@@ -1,4 +1,5 @@
 import { useRef, useEffect, useState, useCallback } from "react";
+import { useReducedMotion } from "motion/react";
 import * as d3 from "d3";
 import { ResponsiveChartWrapper } from "./ResponsiveChartWrapper";
 import { ChartTooltip } from "./ChartTooltip";
@@ -74,16 +75,16 @@ function getLabelCountries(bubbleData) {
 
 function BubbleSVG({ width, height, year, isLog, onTooltip, rScale }) {
   const svgRef = useRef(null);
+  const prefersReducedMotion = useReducedMotion();
 
   useEffect(() => {
     if (!width || !height) return;
 
     const svg = d3.select(svgRef.current);
-    svg.selectAll("*").remove();
-
     const axisColor = cssVar("--chart-axis");
     const textColor = cssVar("--chart-text");
     const gridColor = cssVar("--chart-grid");
+    const transitionDuration = prefersReducedMotion ? 0 : 1200;
 
     const margin = { top: 15, right: 20, bottom: 35, left: 55 };
     const w = width - margin.left - margin.right;
@@ -93,7 +94,15 @@ function BubbleSVG({ width, height, year, isLog, onTooltip, rScale }) {
     const bubbleData = getBubbleData(year);
     if (!bubbleData.length) return;
 
-    // --- Scales ---
+    svg.selectAll("*").interrupt();
+    const root = svg.select("g.chart-root");
+    const chartRoot = root.empty()
+      ? svg
+          .append("g")
+          .classed("chart-root", true)
+          .attr("transform", `translate(${margin.left},${margin.top})`)
+      : root.attr("transform", `translate(${margin.left},${margin.top})`);
+
     const energyExtent = d3.extent(bubbleData, (d) => d.energy);
 
     const x = isLog
@@ -124,101 +133,171 @@ function BubbleSVG({ width, height, year, isLog, onTooltip, rScale }) {
         .domain(energyExtent)
         .range([3, Math.min(w, h) * 0.08]);
 
-    const g = svg
-      .append("g")
-      .attr("transform", `translate(${margin.left},${margin.top})`);
+    const axisTransition = transitionDuration
+      ? d3.transition().duration(transitionDuration).ease(d3.easeCubicInOut)
+      : null;
 
-    // --- Grid lines ---
-    g.append("g")
-      .call(d3.axisLeft(y).ticks(5).tickSize(-w).tickFormat(""))
-      .call((g) => g.select(".domain").remove())
-      .call((g) =>
-        g
-          .selectAll(".tick line")
-          .attr("stroke", gridColor)
-          .attr("stroke-dasharray", "2,2"),
-      );
+    const grid = chartRoot.select(".grid");
+    const axisLeftGroup = chartRoot.select(".y-axis");
+    const axisBottomGroup = chartRoot.select(".x-axis");
+    const bubbleGroup = chartRoot.select(".bubble-group");
+    const labelGroup = chartRoot.select(".labels");
+    const leaderGroup = chartRoot.select(".leader-lines");
 
-    // --- X axis ---
-    const xTickCount = w < 300 ? 3 : w < 500 ? 5 : 7;
+    chartRoot.selectAll("* ").interrupt();
+    bubbleGroup.selectAll(".bubble").interrupt();
+
+    if (grid.empty()) {
+      chartRoot.append("g").classed("grid", true);
+      chartRoot.append("g").classed("y-axis", true);
+      chartRoot
+        .append("g")
+        .classed("x-axis", true)
+        .attr("transform", `translate(0,${h})`);
+      chartRoot.append("g").classed("bubble-group", true);
+      chartRoot.append("g").classed("leader-lines", true);
+      chartRoot.append("g").classed("labels", true);
+    }
+
     const xAxisGen = isLog
-      ? d3.axisBottom(x).ticks(xTickCount, (d) => {
+      ? d3.axisBottom(x).ticks(w < 300 ? 3 : w < 500 ? 5 : 7, (d) => {
           if (d >= 1000) return `${d / 1000}k`;
           return d;
         })
       : d3
           .axisBottom(x)
-          .ticks(xTickCount)
+          .ticks(w < 300 ? 3 : w < 500 ? 5 : 7)
           .tickFormat((d) => {
             if (d >= 1000) return `${d / 1000}k`;
             return d;
           });
 
-    g.append("g")
-      .attr("transform", `translate(0,${h})`)
-      .call(xAxisGen)
-      .call((g) => g.select(".domain").attr("stroke", axisColor))
-      .call((g) => g.selectAll(".tick line").attr("stroke", axisColor))
-      .call((g) =>
-        g
-          .selectAll(".tick text")
-          .attr("fill", textColor)
-          .attr("font-size", "10px"),
-      );
+    const yAxisGen = d3
+      .axisLeft(y)
+      .ticks(5)
+      .tickFormat((d) => `${d}%`);
 
-    // X label
-    g.append("text")
+    const gridUpdate = chartRoot.select(".grid");
+    const xAxisUpdate = axisBottomGroup;
+    const yAxisUpdate = axisLeftGroup;
+
+    if (axisTransition) {
+      gridUpdate
+        .transition(axisTransition)
+        .call(d3.axisLeft(y).ticks(5).tickSize(-w).tickFormat(""))
+        .call((g) => g.select(".domain").remove())
+        .call((g) =>
+          g
+            .selectAll(".tick line")
+            .attr("stroke", gridColor)
+            .attr("stroke-dasharray", "2,2"),
+        );
+
+      xAxisUpdate
+        .transition(axisTransition)
+        .attr("transform", `translate(0,${h})`)
+        .call(xAxisGen)
+        .call((g) => g.select(".domain").attr("stroke", axisColor))
+        .call((g) => g.selectAll(".tick line").attr("stroke", axisColor))
+        .call((g) =>
+          g
+            .selectAll(".tick text")
+            .attr("fill", textColor)
+            .attr("font-size", "10px"),
+        );
+
+      yAxisUpdate
+        .transition(axisTransition)
+        .call(yAxisGen)
+        .call((g) => g.select(".domain").attr("stroke", axisColor))
+        .call((g) => g.selectAll(".tick line").attr("stroke", axisColor))
+        .call((g) =>
+          g
+            .selectAll(".tick text")
+            .attr("fill", textColor)
+            .attr("font-size", "10px"),
+        );
+    } else {
+      gridUpdate
+        .call(d3.axisLeft(y).ticks(5).tickSize(-w).tickFormat(""))
+        .call((g) => g.select(".domain").remove())
+        .call((g) =>
+          g
+            .selectAll(".tick line")
+            .attr("stroke", gridColor)
+            .attr("stroke-dasharray", "2,2"),
+        );
+
+      xAxisUpdate
+        .attr("transform", `translate(0,${h})`)
+        .call(xAxisGen)
+        .call((g) => g.select(".domain").attr("stroke", axisColor))
+        .call((g) => g.selectAll(".tick line").attr("stroke", axisColor))
+        .call((g) =>
+          g
+            .selectAll(".tick text")
+            .attr("fill", textColor)
+            .attr("font-size", "10px"),
+        );
+
+      yAxisUpdate
+        .call(yAxisGen)
+        .call((g) => g.select(".domain").attr("stroke", axisColor))
+        .call((g) => g.selectAll(".tick line").attr("stroke", axisColor))
+        .call((g) =>
+          g
+            .selectAll(".tick text")
+            .attr("fill", textColor)
+            .attr("font-size", "10px"),
+        );
+    }
+
+    const xLabel = chartRoot.selectAll(".x-label").data([null]);
+    xLabel
+      .enter()
+      .append("text")
+      .classed("x-label", true)
+      .attr("text-anchor", "middle")
+      .attr("fill", textColor)
+      .attr("font-size", "10px")
+      .merge(xLabel)
       .attr("x", w / 2)
       .attr("y", h + 28)
-      .attr("text-anchor", "middle")
-      .attr("fill", textColor)
-      .attr("font-size", "10px")
       .text(isLog ? "Total Energy TWh (log scale)" : "Total Energy TWh");
 
-    // --- Y axis ---
-    g.append("g")
-      .call(
-        d3
-          .axisLeft(y)
-          .ticks(5)
-          .tickFormat((d) => `${d}%`),
-      )
-      .call((g) => g.select(".domain").attr("stroke", axisColor))
-      .call((g) => g.selectAll(".tick line").attr("stroke", axisColor))
-      .call((g) =>
-        g
-          .selectAll(".tick text")
-          .attr("fill", textColor)
-          .attr("font-size", "10px"),
-      );
+    const bubbles = bubbleGroup
+      .selectAll(".bubble")
+      .data(bubbleData, (d) => d.country);
 
-    // Y label
-    g.append("text")
-      .attr("transform", "rotate(-90)")
-      .attr("x", -h / 2)
-      .attr("y", -40)
-      .attr("text-anchor", "middle")
-      .attr("fill", textColor)
-      .attr("font-size", "10px")
-      .text("Renewables Share (%)");
-
-    // --- Bubbles ---
-    g.selectAll(".bubble")
-      .data(bubbleData)
-      .join("circle")
+    const bubblesEnter = bubbles
+      .enter()
+      .append("circle")
       .attr("class", "bubble")
       .attr("cx", (d) => x(d.energy))
       .attr("cy", (d) => y(d.renewableShare))
-      .attr("r", (d) => r(d.energy))
+      .attr("r", 0)
       .attr("fill", (d) => d.color)
       .attr("fill-opacity", 0.6)
       .attr("stroke", (d) => d.color)
       .attr("stroke-width", 1.2)
       .attr("stroke-opacity", 0.85);
 
-    // --- Country labels (largest per region) with collision avoidance ---
-    const labelCountries = getLabelCountries(bubbleData);
+    const bubblesMerge = bubblesEnter.merge(bubbles);
+    const bubbleTransition = axisTransition
+      ? bubblesMerge.transition(axisTransition)
+      : bubblesMerge;
+    bubbleTransition
+      .attr("cx", (d) => x(d.energy))
+      .attr("cy", (d) => y(d.renewableShare))
+      .attr("r", (d) => r(d.energy));
 
+    if (!prefersReducedMotion) {
+      bubbles.exit().transition().duration(400).attr("r", 0).remove();
+    } else {
+      bubbles.exit().remove();
+    }
+
+    const labelCountries = getLabelCountries(bubbleData);
     const labels = labelCountries.map((d) => {
       const cx = x(d.energy);
       const cy = y(d.renewableShare);
@@ -249,7 +328,6 @@ function BubbleSVG({ width, height, year, isLog, onTooltip, rScale }) {
       };
     });
 
-    // Collision avoidance — iterative push
     for (let iter = 0; iter < 50; iter++) {
       for (let i = 0; i < labels.length; i++) {
         for (let j = i + 1; j < labels.length; j++) {
@@ -286,55 +364,101 @@ function BubbleSVG({ width, height, year, isLog, onTooltip, rScale }) {
       }
     }
 
-    // Clamp labels within chart bounds
     labels.forEach((d) => {
       d.labelX = Math.max(d.width / 2, Math.min(w - d.width / 2, d.labelX));
       d.labelY = Math.max(8, Math.min(h - 8, d.labelY));
     });
 
-    // Draw leader lines
-    labels.forEach((d) => {
-      g.append("line")
-        .attr("x1", d.cx)
-        .attr("y1", d.cy - d.radius)
-        .attr("x2", d.labelX)
-        .attr("y2", d.labelY + 4)
-        .attr("stroke", axisColor)
-        .attr("stroke-width", 0.75);
-    });
+    const labelContainers = labelGroup
+      .selectAll(".label-container")
+      .data(labels, (d) => d.country);
 
-    // Draw label text with white halo for readability
-    const bgColor = cssVar("--bg-card");
-    labels.forEach((d) => {
-      // Halo (white stroke behind text)
-      g.append("text")
-        .attr("x", d.labelX)
-        .attr("y", d.labelY)
-        .attr("text-anchor", "middle")
-        .attr("font-size", "9px")
-        .attr("font-weight", 500)
-        .attr("fill", bgColor)
-        .attr("stroke", bgColor)
-        .attr("stroke-width", 3)
-        .attr("stroke-linejoin", "round")
-        .style("pointer-events", "none")
-        .text(d.displayName);
+    const labelContainersExit = labelContainers.exit();
+    if (axisTransition) {
+      labelContainersExit
+        .transition(axisTransition)
+        .attr("opacity", 0)
+        .remove();
+    } else {
+      labelContainersExit.remove();
+    }
 
-      // Actual label
-      g.append("text")
-        .attr("x", d.labelX)
-        .attr("y", d.labelY)
-        .attr("text-anchor", "middle")
-        .attr("font-size", "9px")
-        .attr("font-weight", 500)
-        .attr("fill", textColor)
-        .style("pointer-events", "none")
-        .text(d.displayName);
-    });
+    const labelContainersEnter = labelContainers
+      .enter()
+      .append("g")
+      .classed("label-container", true)
+      .attr("transform", (d) => `translate(${d.cx},${d.cy - d.radius})`)
+      .attr("opacity", 0);
 
-    // --- Tooltip interaction ---
-    // Transparent overlay for hit detection
-    g.selectAll(".bubble")
+    labelContainersEnter
+      .append("text")
+      .classed("label-back", true)
+      .attr("text-anchor", "middle")
+      .attr("font-size", "9px")
+      .attr("font-weight", 500)
+      .attr("fill", cssVar("--bg-card"))
+      .attr("stroke", cssVar("--bg-card"))
+      .attr("stroke-width", 3)
+      .attr("stroke-linejoin", "round")
+      .style("pointer-events", "none")
+      .text((d) => d.displayName);
+
+    labelContainersEnter
+      .append("text")
+      .classed("label-front", true)
+      .attr("text-anchor", "middle")
+      .attr("font-size", "9px")
+      .attr("font-weight", 500)
+      .attr("fill", textColor)
+      .style("pointer-events", "none")
+      .text((d) => d.displayName);
+
+    const labelContainersMerge = labelContainersEnter.merge(labelContainers);
+    const labelTransition = axisTransition
+      ? labelContainersMerge.transition(axisTransition)
+      : labelContainersMerge;
+
+    labelTransition
+      .attr("transform", (d) => `translate(${d.labelX},${d.labelY})`)
+      .attr("opacity", 1);
+
+    const leaders = leaderGroup
+      .selectAll(".leader-line")
+      .data(labels, (d) => d.country);
+
+    const leadersExit = leaders.exit();
+    if (axisTransition) {
+      leadersExit.transition(axisTransition).attr("stroke-opacity", 0).remove();
+    } else {
+      leadersExit.remove();
+    }
+
+    const leadersEnter = leaders
+      .enter()
+      .append("line")
+      .classed("leader-line", true)
+      .attr("x1", (d) => d.cx)
+      .attr("y1", (d) => d.cy - d.radius)
+      .attr("x2", (d) => d.cx)
+      .attr("y2", (d) => d.cy - d.radius)
+      .attr("stroke", axisColor)
+      .attr("stroke-width", 0.75)
+      .attr("stroke-opacity", 0);
+
+    const leadersMerge = leadersEnter.merge(leaders);
+    const leadersTransition = axisTransition
+      ? leadersMerge.transition(axisTransition)
+      : leadersMerge;
+
+    leadersTransition
+      .attr("x1", (d) => d.cx)
+      .attr("y1", (d) => d.cy - d.radius)
+      .attr("x2", (d) => d.labelX)
+      .attr("y2", (d) => d.labelY + 4)
+      .attr("stroke-opacity", 1);
+
+    bubbleGroup
+      .selectAll(".bubble")
       .on("mousemove", function (event) {
         const d = d3.select(this).datum();
         const [mx, my] = d3.pointer(event, svg.node());
@@ -384,7 +508,7 @@ function BubbleSVG({ width, height, year, isLog, onTooltip, rScale }) {
         });
       })
       .on("mouseleave", () => onTooltip(null));
-  }, [width, height, year, isLog, onTooltip, rScale]);
+  }, [width, height, year, isLog, onTooltip, rScale, prefersReducedMotion]);
 
   return <svg ref={svgRef} width={width} height={height} />;
 }
@@ -406,6 +530,7 @@ export function BubbleChart() {
   return (
     <ResponsiveChartWrapper
       title="Energy vs Renewables — by Region"
+      animationKey={`${year}-${isLog}`}
       controls={
         <div className="bubble-controls">
           <div className="year-slider-container">
