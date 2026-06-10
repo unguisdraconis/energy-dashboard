@@ -138,13 +138,13 @@ function BubbleSVG({ width, height, year, isLog, onTooltip, rScale }) {
       : null;
 
     const grid = chartRoot.select(".grid");
-    const axisLeftGroup = chartRoot.select(".y-axis");
-    const axisBottomGroup = chartRoot.select(".x-axis");
-    const bubbleGroup = chartRoot.select(".bubble-group");
-    const labelGroup = chartRoot.select(".labels");
-    const leaderGroup = chartRoot.select(".leader-lines");
+    let axisLeftGroup = chartRoot.select(".y-axis");
+    let axisBottomGroup = chartRoot.select(".x-axis");
+    let bubbleGroup = chartRoot.select(".bubble-group");
+    let labelGroup = chartRoot.select(".labels");
+    let leaderGroup = chartRoot.select(".leader-lines");
 
-    chartRoot.selectAll("* ").interrupt();
+    chartRoot.selectAll("*").interrupt();
     bubbleGroup.selectAll(".bubble").interrupt();
 
     if (grid.empty()) {
@@ -157,6 +157,12 @@ function BubbleSVG({ width, height, year, isLog, onTooltip, rScale }) {
       chartRoot.append("g").classed("bubble-group", true);
       chartRoot.append("g").classed("leader-lines", true);
       chartRoot.append("g").classed("labels", true);
+
+      axisLeftGroup = chartRoot.select(".y-axis");
+      axisBottomGroup = chartRoot.select(".x-axis");
+      bubbleGroup = chartRoot.select(".bubble-group");
+      labelGroup = chartRoot.select(".labels");
+      leaderGroup = chartRoot.select(".leader-lines");
     }
 
     const xAxisGen = isLog

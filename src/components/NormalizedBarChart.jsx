@@ -98,10 +98,9 @@ function NormalizedBarSVG({ width, height, year, onTooltip, orderBy }) {
       });
     });
 
-    const bars = chartGroup.selectAll("rect.bar-segment").data(
-      barsData,
-      (d) => `${d.country}-${d.src}`,
-    );
+    const bars = chartGroup
+      .selectAll("rect.bar-segment")
+      .data(barsData, (d) => `${d.country}-${d.src}`);
 
     const barsEnter = bars
       .enter()

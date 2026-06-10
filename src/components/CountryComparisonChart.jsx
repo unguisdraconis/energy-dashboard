@@ -223,7 +223,7 @@ function ComparisonSVG({ width, height, selectedCountries, onTooltip }) {
         crosshair.style("display", "none");
         onTooltip(null);
       });
-  }, [width, height, selectedCountries, onTooltip]);
+  }, [width, height, selectedCountries, onTooltip, prefersReducedMotion]);
 
   return <svg ref={svgRef} width={width} height={height} />;
 }

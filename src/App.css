@@ -202,6 +202,7 @@ body {
   margin-bottom: 0.5rem;
   flex-shrink: 0;
   flex-wrap: wrap;
+  min-width: 0;
 }
 
 .chart-title {
@@ -218,6 +219,7 @@ body {
   gap: 0.5rem;
   align-items: center;
   flex-wrap: wrap;
+  min-width: 0;
 }
 
 /* ===== Chart Container (measured by useDimensions) ===== */
@@ -393,10 +395,28 @@ body {
 /* ===== Controls: Country Toggle Buttons ===== */
 .country-toggles {
   display: flex;
-  flex-wrap: wrap;
+  flex: 1 1 auto;
+  min-width: 0;
+  flex-wrap: nowrap;
   gap: 0.25rem;
-  max-height: 5.5rem;
-  overflow-y: auto;
+  overflow-x: auto;
+  overflow-y: hidden;
+  -webkit-overflow-scrolling: touch;
+  touch-action: pan-x;
+  padding-bottom: 0.25rem;
+  padding-right: 1.5rem;
+  position: relative;
+}
+
+.country-toggles::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 1.5rem;
+  height: 100%;
+  pointer-events: none;
+  background: linear-gradient(to left, var(--bg-card), rgba(255, 255, 255, 0));
 }
 
 .toggle-btn {
@@ -495,6 +515,7 @@ body {
 /* ===== Scrollbar (for country toggle overflow) ===== */
 .country-toggles::-webkit-scrollbar {
   width: 4px;
+  height: 4px;
 }
 
 .country-toggles::-webkit-scrollbar-track {
@@ -504,6 +525,12 @@ body {
 .country-toggles::-webkit-scrollbar-thumb {
   background: var(--border);
   border-radius: 2px;
+  transition: background 0.15s ease;
+}
+
+.country-toggles:hover::-webkit-scrollbar-thumb,
+.country-toggles::-webkit-scrollbar-thumb:hover {
+  background: rgba(100, 100, 100, 0.9);
 }
 
 /* ===== Responsive adjustments ===== */
@@ -526,7 +553,16 @@ body {
   }
 
   .country-toggles {
-    max-height: 4rem;
+    max-height: 5.5rem;
+    flex-wrap: wrap;
+    overflow-x: hidden;
+    overflow-y: auto;
+    touch-action: auto;
+    padding-right: 0;
+  }
+
+  .country-toggles::after {
+    display: none;
   }
 
   .bubble-controls {

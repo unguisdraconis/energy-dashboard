@@ -160,8 +160,8 @@ function TreemapSVG({ width, height, year, onTooltip }) {
       cellExit.remove();
     }
 
-    const labelData = cells.filter((cell) =>
-      Math.abs(d3.polygonArea(cell.polygon)) > 700,
+    const labelData = cells.filter(
+      (cell) => Math.abs(d3.polygonArea(cell.polygon)) > 700,
     );
 
     const labelSelection = chart
