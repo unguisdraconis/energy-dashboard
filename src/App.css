@@ -553,11 +553,13 @@ body {
   }
 
   .country-toggles {
-    max-height: 5.5rem;
+    max-height: 7rem;
     flex-wrap: wrap;
     overflow-x: hidden;
     overflow-y: auto;
-    touch-action: auto;
+    touch-action: pan-y;
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
     padding-right: 0;
   }
 

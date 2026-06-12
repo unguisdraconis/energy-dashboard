@@ -680,16 +680,16 @@ export function MyChart() {
 
 ## 11. Common Mistakes to Avoid
 
-| Mistake                                    | Why it's wrong                                    | Correct approach                            |
-| ------------------------------------------ | ------------------------------------------------- | ------------------------------------------- |
-| Hardcoding `'#374151'` in D3 code          | Breaks in the other theme                         | `cssVar('--chart-axis')`                    |
-| Using SVG `<text>` + `<rect>` for tooltips | Hard to style, can't wrap text, clips at SVG edge | Use `<ChartTooltip>` HTML component         |
-| Rendering SVG in normal flow               | Causes infinite resize loop                       | `.chart-svg-wrapper { position: absolute }` |
-| Using `min-height` on chart widget         | Container can grow infinitely                     | Use fixed `height: 480px`                   |
-| Putting 12 lines on one chart              | Colors become indistinguishable                   | Cap at 9 series, use toggles                |
-| Using `#000000` for a data series          | Conflicts with text/axis colors                   | Use `#4a4a4a` (dark grey)                   |
-| Using `#F0E442` yellow as a thin line      | Invisible on white background                     | Only use yellow for filled areas            |
-| Duplicating `cssVar()` in each file        | Violates single source of truth                   | Import from `../utils/cssVar`               |
-| Inline legend markup in chart files        | Duplicated across charts                          | Use `<ChartLegend items={...} />`           |
-| Inline toggle buttons in chart files       | Duplicated across charts                          | Use `<CountryToggles ... />`                |
-| Using a non-Okabe-Ito accent color         | Breaks palette consistency                        | `--accent: #0072B2` (Okabe-Ito blue)        |
+| Mistake                                        | Why it's wrong                                    | Correct approach                                                             |
+| ---------------------------------------------- | ------------------------------------------------- | ---------------------------------------------------------------------------- | --- | ----------------------------------- | --------------------------------------- | ------------------------------------------------------------------- |
+| Hardcoding `'#374151'` in D3 code              | Breaks in the other theme                         | `cssVar('--chart-axis')`                                                     |
+| Using SVG `<text>` + `<rect>` for tooltips     | Hard to style, can't wrap text, clips at SVG edge | Use `<ChartTooltip>` HTML component                                          |
+| Rendering SVG in normal flow                   | Causes infinite resize loop                       | `.chart-svg-wrapper { position: absolute }`                                  |
+| Using `min-height` on chart widget             | Container can grow infinitely                     | Use fixed `height: 480px`                                                    |
+| Putting 12 lines on one chart                  | Colors become indistinguishable                   | Cap at 9 series, use toggles                                                 |
+| Using `#000000` for a data series              | Conflicts with text/axis colors                   | Use `#4a4a4a` (dark grey)                                                    |
+| Using `#F0E442` yellow as a thin line          | Invisible on white background                     | Only use yellow for filled areas                                             |     | Ignoring reduced-motion preferences | Motion becomes jarring and inaccessible | Use `useReducedMotion()` and disable chart animation when requested |
+| Animating SVG or layout with `transition: all` | Can produce stuttering and high paint cost        | Animate specific attributes only, such as `stroke-dashoffset` or wrapper `y` |     | Duplicating `cssVar()` in each file | Violates single source of truth         | Import from `../utils/cssVar`                                       |
+| Inline legend markup in chart files            | Duplicated across charts                          | Use `<ChartLegend items={...} />`                                            |
+| Inline toggle buttons in chart files           | Duplicated across charts                          | Use `<CountryToggles ... />`                                                 |
+| Using a non-Okabe-Ito accent color             | Breaks palette consistency                        | `--accent: #0072B2` (Okabe-Ito blue)                                         |
