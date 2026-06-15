@@ -21,6 +21,7 @@ export function BubbleLegend({ scale, tickNumber = 4 }) {
       {/* Use `key` to uniquely identify each group in React */}
       <g key={i}>
         {/* Render a circle for the current tick value. The circle's center is at (xCenter,
+yCircleCenter) and has radius `scale(tick)`. */}
         <circle
           cx={xCenter}
           cy={yCircleCenter}
