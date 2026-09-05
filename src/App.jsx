@@ -65,11 +65,15 @@ function App() {
         animate={{ y: 0 }}
         transition={motionTransition}
       >
-        {/* Footer content including data source ans social links */}
+        {/* Footer content including data source and social links */}
         <p className="data-source">
-          Source: Our World in Data · Energy consumption by source (TWh) ·
-          Scaffolding by Claude Opus 4.6 · Visualization by Jeremiah King as
-          part of D3 Loves React course taught by Yan Holtz
+          Source:{" "}
+          <a href="https://github.com/owid/energy-data">
+            Our World in Data--Energy Dataset (CC BY 4.0)
+          </a>{" "}
+          · Energy consumption by source (TWh) · Scaffolding by Claude Opus 4.6
+          · Visualization by Jeremiah King as part of D3 Loves React course
+          taught by Yan Holtz
         </p>
         {/* Social media link for Github */}
         <a
