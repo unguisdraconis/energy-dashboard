@@ -65,7 +65,7 @@ function App() {
         animate={{ y: 0 }}
         transition={motionTransition}
       >
-        {/* Footer content including data source and social links */}
+        {/* Footer data source and credits */}
         <p className="data-source">
           Source:{" "}
           <a href="https://github.com/owid/energy-data">
@@ -75,29 +75,6 @@ function App() {
           · Visualization by Jeremiah King as part of D3 Loves React course
           taught by Yan Holtz
         </p>
-        {/* Social media link for Github */}
-        <a
-          className="social-button"
-          href="https://github.com/unguisdraconis"
-          target="_blank"
-          rel="noreferrer"
-          aria-label="GitHub page"
-          title="GitHub"
-        >
-          🐙
-        </a>
-
-        {/* Social media link for LinkedIn */}
-        <a
-          className="social-button"
-          href="https://www.linkedin.com/in/jeremiahjking"
-          target="_blank"
-          rel="noreferrer"
-          aria-label="LinkedIn profile"
-          title="LinkedIn"
-        >
-          🔗
-        </a>
       </motion.footer>
     </>
   );
