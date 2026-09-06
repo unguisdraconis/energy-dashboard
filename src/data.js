@@ -1,6 +1,10 @@
 /**
- * Energy consumption by source (TWh) for 22 countries + World, 1965–2024.
- * Source: Our World in Data
+ * Course-provided energy dataset for 29 selected entities, including World,
+ * covering 1965–2024. The D3 Loves React course materials attributed the
+ * dataset to Our World in Data.
+ *
+ * This repository preserves the supplied subset used by the visualizations;
+ * the exact upstream OWID snapshot represented by it is not identified here.
  */
 export const data = [
   {

@@ -33,18 +33,14 @@ function App() {
           How the world's energy mix has evolved over 60 years (1965–2024)
         </p>
         <p className="description">
-          The Global Energy Dashboard offers a playground for exploring global
-          energy trends through six interactive charts. The Stacked Area Chart
-          visualizes a country's shifting energy mix over time, revealing a rise
-          in the percentage of renewables, but also a continued reliance on
-          fossil fuels. The Multi-Line Chart compares total primary energy
-          consumption across countries, while the Normalized Stacked Bar Chart
-          snapshots energy structure for selected years. The Bubble Chart maps
-          energy consumption, renewables share, and fossil dependency. The
-          Voronoi Treemap shows country-level energy totals using year-slider
-          interaction, with color indicating each country's primary energy
-          source, and the Radar Chart allows us to visualize the imbalanced
-          energy profiles of different countries.
+          This D3 Loves React learning project explores historical energy data
+          through six interactive charts. The stacked area, multi-line, and
+          normalized bar views compare energy use over time and across selected
+          entities. The bubble chart compares total primary energy with the
+          combined share from solar, wind, biofuel, and other renewable sources;
+          hydro is not included in that calculated share. The Voronoi view shows
+          entities as cells colored by their dominant energy source, while the
+          radar chart compares the source profile of a selected entity and year.
         </p>
       </motion.header>
 
@@ -67,13 +63,13 @@ function App() {
       >
         {/* Footer data source and credits */}
         <p className="data-source">
-          Source:{" "}
+          Data supplied through the D3 Loves React course; attributed source:{" "}
           <a href="https://github.com/owid/energy-data">
-            Our World in Data--Energy Dataset (CC BY 4.0)
+            Our World in Data energy-data
           </a>{" "}
-          · Energy consumption by source (TWh) · Scaffolding by Claude Opus 4.6
-          · Visualization by Jeremiah King as part of D3 Loves React course
-          taught by Yan Holtz
+          · Consult OWID's documentation for field-level provenance and terms ·
+          Scaffolding by Claude Opus 4.6 · Visualization by Jeremiah King as
+          part of D3 Loves React, taught by Yan Holtz
         </p>
       </motion.footer>
     </>

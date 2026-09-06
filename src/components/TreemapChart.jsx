@@ -247,7 +247,7 @@ export function TreemapChart() {
 
   return (
     <ResponsiveChartWrapper
-      title="Voronoi Energy Treemap"
+      title="Voronoi Energy View"
       animationKey={year}
       controls={
         <div className="year-slider-container">

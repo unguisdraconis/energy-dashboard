@@ -17,7 +17,8 @@ const RENEWABLE_KEYS = ["solar", "wind", "biofuel", "other_renewable"];
 
 /**
  * Prepare bubble data for a given year.
- * Returns array of { country, region, color, energy, renewableShare, renewableBreakdown }.
+ * Returns country-level total energy and the combined share from solar, wind,
+ * biofuel, and other renewable sources. Hydro is not part of this calculation.
  * Excludes countries with null energy source data (e.g., Nigeria).
  */
 function getBubbleData(year) {
@@ -33,11 +34,11 @@ function getBubbleData(year) {
       const total = row.primary_energy || 0;
       if (total <= 0) return null; // Exclude entries with non-positive energy totals.
 
-      const renewableTotal = RENEWABLE_KEYS.reduce(
+      const selectedRenewablesTotal = RENEWABLE_KEYS.reduce(
         (sum, k) => sum + (row[k] ?? 0), // Calculate total renewable energy
         0,
       );
-      const renewableShare = (renewableTotal / total) * 100; // Calculate the percentage of renewable share.
+      const selectedRenewablesShare = (selectedRenewablesTotal / total) * 100;
 
       const region = getRegionForCountry(country);
       if (!region) return null; // Skip if no valid region is found for the country.
@@ -47,7 +48,7 @@ function getBubbleData(year) {
         region,
         color: getColorForCountry(country), // Color associated with the country.
         energy: total, // Total energy consumption
-        renewableShare, // Percentage of energy that is renewable
+        selectedRenewablesShare,
         renewableBreakdown: {
           //Breakdown of each type of renewable energy.
           solar: row.solar ?? 0,
@@ -120,12 +121,15 @@ function BubbleSVG({ width, height, year, isLog, onTooltip, rScale }) {
           .range([0, w])
           .nice();
 
-    // Define y-scale for renewable share perventages.
+    // Define y-scale for the selected-renewables share percentages.
     const y = d3
       .scaleLinear()
       .domain([
         0,
-        Math.max(d3.max(bubbleData, (d) => d.renewableShare) * 1.15, 5), // Ensure the domain goes at least up to 5% or slightly above the max renewable share.
+        Math.max(
+          d3.max(bubbleData, (d) => d.selectedRenewablesShare) * 1.15,
+          5,
+        ),
       ])
       .range([h, 0])
       .nice();
@@ -284,6 +288,20 @@ function BubbleSVG({ width, height, year, isLog, onTooltip, rScale }) {
       .attr("y", h + 28) // Slightly below the x-axis
       .text(isLog ? "Total Energy TWh (log scale)" : "Total Energy TWh"); // Conditional text based on scaling type
 
+    const yLabel = chartRoot.selectAll(".y-label").data([null]);
+    yLabel
+      .enter()
+      .append("text")
+      .classed("y-label", true)
+      .attr("text-anchor", "middle")
+      .attr("fill", textColor)
+      .attr("font-size", "10px")
+      .merge(yLabel)
+      .attr("transform", "rotate(-90)")
+      .attr("x", -h / 2)
+      .attr("y", -42)
+      .text("Selected renewables (%)");
+
     // Create or update bubbles representing countries data points
     const bubbles = bubbleGroup
       .selectAll(".bubble")
@@ -294,7 +312,7 @@ function BubbleSVG({ width, height, year, isLog, onTooltip, rScale }) {
       .append("circle") // Enter selection: append new circles.
       .attr("class", "bubble")
       .attr("cx", (d) => x(d.energy)) // Set initial position on the x-axis based on energy data
-      .attr("cy", (d) => y(d.renewableShare)) // Set initial center position on the y-axis based on renewable share
+      .attr("cy", (d) => y(d.selectedRenewablesShare))
       .attr("r", 0) // Start with a radius of zero for transition effect
       .attr("fill", (d) => d.color) // Fill color from data
       .attr("fill-opacity", 0.6)
@@ -308,7 +326,7 @@ function BubbleSVG({ width, height, year, isLog, onTooltip, rScale }) {
       : bubblesMerge;
     bubbleTransition
       .attr("cx", (d) => x(d.energy)) // Update center positions on the x-axis based on energy data.
-      .attr("cy", (d) => y(d.renewableShare)) // Update center positions on the y-axis based on renewable share.
+      .attr("cy", (d) => y(d.selectedRenewablesShare))
       .attr("r", (d) => r(d.energy)); // Update radius based on energy data.
 
     if (!prefersReducedMotion) {
@@ -321,7 +339,7 @@ function BubbleSVG({ width, height, year, isLog, onTooltip, rScale }) {
     const labelCountries = getLabelCountries(bubbleData);
     const labels = labelCountries.map((d) => {
       const cx = x(d.energy); // Calculate center position on the x-axis based on energy data
-      const cy = y(d.renewableShare); // Calculate center position on the y-axis based on renewable share
+      const cy = y(d.selectedRenewablesShare);
       const radius = r(d.energy); // Radius of bubbles for positioning labels
       const displayName = // Adjust country name display (e.g., USA instead of United States)
         d.country === "United States"
@@ -503,9 +521,9 @@ function BubbleSVG({ width, height, year, isLog, onTooltip, rScale }) {
             },
             {
               key: "renewables",
-              label: "Renewables",
+              label: "Selected renewables",
               color: "#2CA02C", // Use consistent green for renewable percentage row
-              value: `${d.renewableShare.toFixed(1)}%`, // Format renewable share as a percentage with one decimal place.
+              value: `${d.selectedRenewablesShare.toFixed(1)}%`,
             },
             {
               key: "solar",
@@ -557,7 +575,7 @@ export function BubbleChart() {
 
   return (
     <ResponsiveChartWrapper
-      title="Energy vs Renewables — by Region" // Set chart title.
+      title="Energy vs Selected Renewables — by Region" // Set chart title.
       animationKey={`${year}-${isLog}`} // Unique key for managing transitions based on current year and scale type.
       controls={
         // Render control elements for user interaction:
