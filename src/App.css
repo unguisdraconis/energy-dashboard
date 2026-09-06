@@ -100,6 +100,18 @@ body {
   -moz-osx-font-smoothing: grayscale; /* Improves rendering on Firefox on macOS */
 }
 
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
 /* ===== Dashboard Layout Styles ===== */
 .dashboard-header {
   text-align: center;
@@ -178,7 +190,7 @@ body {
   display: flex;
   flex-direction: column;
   height: 480px; /* Fixed height for consistent layout */
-  overflow: hidden; /* Hides any overflow content */
+  overflow: hidden; /* Keeps chart and expanded value-table content inside the card. */
   box-shadow: var(--shadow); /* Applies box shadow from CSS variable */
   transition: box-shadow 0.3s; /* Smooth transition for shadow changes on hover/focus */
 }
@@ -318,10 +330,10 @@ body {
 }
 
 /* Visual feedback when a legend item is focused (e.g., via keyboard navigation) */
-.legend-item:focus {
-  outline: 2px solid var(--accent-bg); /* Outlines the item with accent background color for
-visibility */
+.legend-item:focus-visible {
+  outline: 2px solid var(--accent); /* Keeps keyboard focus visible in both themes. */
   outline-offset: 2px; /* Adds space between the element and its outline */
+  border-radius: 3px;
 }
 
 /* Styles active legend items to emphasize them visually when selected or highlighted */
@@ -388,10 +400,12 @@ importance */
   transition: border-color 0.15s; /* Smooth transition for border color changes on interactions like hover or focus */
 }
 
-.chart-select:focus {
+.chart-select:focus-visible {
   border-color: var(
     --accent
   ); /* Highlights the select element when focused using the accent color */
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
 }
 
 /* ===== Controls: Country Toggle Buttons ===== */
@@ -441,6 +455,11 @@ importance */
     --accent-border
   ); /* Changes border color on hover for visual feedback using accent color */
   color: var(--text-h); /* Changes text color to highlight when hovered */
+}
+
+.toggle-btn:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
 }
 
 .toggle-btn.active {
@@ -495,6 +514,73 @@ importance */
   border-radius: 2px;
   outline: none;
   cursor: pointer;
+}
+
+.year-slider:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 5px;
+}
+
+/* ===== Structured chart values ===== */
+.chart-data-details {
+  margin-top: 0.65rem;
+  padding-top: 0.55rem;
+  border-top: 1px solid var(--border);
+  color: var(--text);
+  font-size: 0.78rem;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.chart-data-details[open] {
+  display: flex;
+  flex-direction: column;
+}
+
+.chart-data-details summary {
+  width: fit-content;
+  color: var(--text-h);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.chart-data-details summary:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+  border-radius: 2px;
+}
+
+.chart-data-table-wrapper {
+  max-height: 16rem;
+  min-height: 0;
+  margin-top: 0.6rem;
+  overflow: auto;
+}
+
+.chart-data-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-variant-numeric: tabular-nums;
+}
+
+.chart-data-table th,
+.chart-data-table td {
+  padding: 0.35rem 0.45rem;
+  border-bottom: 1px solid var(--border);
+  text-align: left;
+  white-space: nowrap;
+}
+
+.chart-data-table thead th {
+  position: sticky;
+  top: 0;
+  background: var(--bg-card);
+  color: var(--text-h);
+}
+
+.chart-data-table tbody th {
+  color: var(--text-h);
+  font-weight: 500;
 }
 
 /* Styles for the thumb control of the slider in Webkit browsers. */

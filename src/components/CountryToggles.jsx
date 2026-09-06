@@ -16,7 +16,11 @@ export function CountryToggles({ countries, selected, onToggle, palette }) {
     : { duration: 0.2, ease: "easeOut" };
 
   return (
-    <div className="country-toggles">
+    <div
+      className="country-toggles"
+      role="group"
+      aria-label="Countries included in the comparison"
+    >
       {countries.map((c) => {
         const idx = selected.indexOf(c);
         const isActive = idx !== -1;
@@ -29,6 +33,7 @@ export function CountryToggles({ countries, selected, onToggle, palette }) {
             className={`toggle-btn${isActive ? " active" : ""}`}
             style={isActive ? { borderColor: color } : {}}
             onClick={() => onToggle(c)}
+            aria-pressed={isActive}
             whileHover={
               isActive ? undefined : { scale: prefersReducedMotion ? 1 : 1.02 }
             }

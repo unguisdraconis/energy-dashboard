@@ -13,7 +13,15 @@ import { getCountries, getCountryData } from "../data"; // Functions to retrieve
  * This component renders the SVG for a stacked area chart using D3.js. It takes in dimensions,
  * selected country, a callback for tooltip handling, and an optional highlight key.
  */
-function StackedAreaSVG({ width, height, country, onTooltip, highlightKey }) {
+function StackedAreaSVG({
+  width,
+  height,
+  country,
+  onTooltip,
+  highlightKey,
+  titleId,
+  descriptionId,
+}) {
   const svgRef = useRef(null); // Reference to the SVG element
   const prefersReducedMotion = useReducedMotion(); // Check if user preferes reduced motion.
 
@@ -293,7 +301,15 @@ function StackedAreaSVG({ width, height, country, onTooltip, highlightKey }) {
       });
   }, [width, height, country, onTooltip, highlightKey, prefersReducedMotion]);
 
-  return <svg ref={svgRef} width={width} height={height} />;
+  return (
+    <svg
+      ref={svgRef}
+      width={width}
+      height={height}
+      role="img"
+      aria-labelledby={`${titleId} ${descriptionId}`}
+    />
+  );
 }
 
 /**
@@ -322,11 +338,13 @@ export function StackedAreaChart() {
   return (
     <ResponsiveChartWrapper
       title="Energy Mix Over Time"
+      description="Stacked areas compare nine energy-source measurements over time for the selected entity. Use the entity selector to change the series and the legend controls to highlight one source. Axes provide approximate values; pointer hover shows exact yearly values."
       animationKey={`${country}-${highlightKey || "all"}`} // Unique key for managing transitions based on current state.
       controls={
         // Render a dropdown to select different countries.
         <select
           className="chart-select"
+          aria-label="Entity for energy mix over time"
           value={country}
           onChange={(e) => setCountry(e.target.value)}
         >
@@ -346,7 +364,7 @@ export function StackedAreaChart() {
         />
       }
     >
-      {({ width, height }) => (
+      {({ width, height, titleId, descriptionId }) => (
         <>
           <StackedAreaSVG
             width={width} // Pass dimensions to the SVG component.
@@ -354,6 +372,8 @@ export function StackedAreaChart() {
             country={country} // Pass selected country to the SVG componenet.
             onTooltip={setTooltip} // Function to handle tooltip display.
             highlightKey={highlightKey} // Highlight key for specific energy source
+            titleId={titleId}
+            descriptionId={descriptionId}
           />
           {tooltip && (
             <ChartTooltip

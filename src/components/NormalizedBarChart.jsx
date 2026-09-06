@@ -8,7 +8,15 @@ import { cssVar } from "../utils/cssVar";
 import { ENERGY_SOURCES, ENERGY_COLORS, ENERGY_LABELS } from "../colorPalette";
 import { data, getCountries, getYearRange } from "../data";
 
-function NormalizedBarSVG({ width, height, year, onTooltip, orderBy }) {
+function NormalizedBarSVG({
+  width,
+  height,
+  year,
+  onTooltip,
+  orderBy,
+  titleId,
+  descriptionId,
+}) {
   const svgRef = useRef(null);
   const prefersReducedMotion = useReducedMotion();
 
@@ -222,7 +230,15 @@ function NormalizedBarSVG({ width, height, year, onTooltip, orderBy }) {
       .on("mouseleave", () => onTooltip(null));
   }, [width, height, year, onTooltip, orderBy, prefersReducedMotion]);
 
-  return <svg ref={svgRef} width={width} height={height} />;
+  return (
+    <svg
+      ref={svgRef}
+      width={width}
+      height={height}
+      role="img"
+      aria-labelledby={`${titleId} ${descriptionId}`}
+    />
+  );
 }
 
 export function NormalizedBarChart() {
@@ -246,12 +262,15 @@ export function NormalizedBarChart() {
   return (
     <ResponsiveChartWrapper
       title="Energy Mix by Country"
+      description="Normalized stacked bars compare the percentage composition of nine energy sources across entities for the selected year. Use the year slider to change the snapshot and activate a legend item to sort by that source. Pointer hover shows exact segment percentages."
       animationKey={`${year}-${orderBy || "none"}`}
       controls={
         <div className="year-slider-container">
           <input
             type="range"
             className="year-slider"
+            aria-label="Year for energy mix comparison"
+            aria-valuetext={String(year)}
             min={minYear}
             max={maxYear}
             value={year}
@@ -268,7 +287,7 @@ export function NormalizedBarChart() {
         />
       }
     >
-      {({ width, height }) => (
+      {({ width, height, titleId, descriptionId }) => (
         <>
           <NormalizedBarSVG
             width={width}
@@ -276,6 +295,8 @@ export function NormalizedBarChart() {
             year={year}
             onTooltip={handleTooltip}
             orderBy={orderBy}
+            titleId={titleId}
+            descriptionId={descriptionId}
           />
           {tooltip && (
             <ChartTooltip

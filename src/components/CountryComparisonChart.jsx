@@ -16,7 +16,14 @@ const DEFAULT_COUNTRIES = [
   "Brazil",
 ];
 
-function ComparisonSVG({ width, height, selectedCountries, onTooltip }) {
+function ComparisonSVG({
+  width,
+  height,
+  selectedCountries,
+  onTooltip,
+  titleId,
+  descriptionId,
+}) {
   const svgRef = useRef(null);
   const prefersReducedMotion = useReducedMotion();
 
@@ -225,7 +232,15 @@ function ComparisonSVG({ width, height, selectedCountries, onTooltip }) {
       });
   }, [width, height, selectedCountries, onTooltip, prefersReducedMotion]);
 
-  return <svg ref={svgRef} width={width} height={height} />;
+  return (
+    <svg
+      ref={svgRef}
+      width={width}
+      height={height}
+      role="img"
+      aria-labelledby={`${titleId} ${descriptionId}`}
+    />
+  );
 }
 
 export function CountryComparisonChart() {
@@ -248,6 +263,7 @@ export function CountryComparisonChart() {
   return (
     <ResponsiveChartWrapper
       title="Country Comparison — Total Energy"
+      description="Lines compare total primary energy over time for up to nine selected countries. Use the country toggle buttons to add or remove lines. End labels and axes identify the visible trends; pointer hover shows exact yearly values."
       animationKey={selected.join("|")}
       controls={
         <CountryToggles
@@ -258,13 +274,15 @@ export function CountryComparisonChart() {
         />
       }
     >
-      {({ width, height }) => (
+      {({ width, height, titleId, descriptionId }) => (
         <>
           <ComparisonSVG
             width={width}
             height={height}
             selectedCountries={selected}
             onTooltip={handleTooltip}
+            titleId={titleId}
+            descriptionId={descriptionId}
           />
           {tooltip && (
             <ChartTooltip

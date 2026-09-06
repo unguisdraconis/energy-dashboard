@@ -59,7 +59,14 @@ function pathFromPolygon(polygon) {
   return `M${polygon.map(([x, y]) => `${x},${y}`).join("L")}Z`;
 }
 
-function TreemapSVG({ width, height, year, onTooltip }) {
+function TreemapSVG({
+  width,
+  height,
+  year,
+  onTooltip,
+  titleId,
+  descriptionId,
+}) {
   const svgRef = useRef(null);
   const prefersReducedMotion = useReducedMotion();
 
@@ -229,7 +236,15 @@ function TreemapSVG({ width, height, year, onTooltip }) {
     applyTooltip(cellMerge);
   }, [width, height, year, onTooltip, prefersReducedMotion]);
 
-  return <svg ref={svgRef} width={width} height={height} />;
+  return (
+    <svg
+      ref={svgRef}
+      width={width}
+      height={height}
+      role="img"
+      aria-labelledby={`${titleId} ${descriptionId}`}
+    />
+  );
 }
 
 export function TreemapChart() {
@@ -238,6 +253,7 @@ export function TreemapChart() {
   const [tooltip, setTooltip] = useState(null);
 
   const handleTooltip = useCallback((val) => setTooltip(val), []);
+  const countrySummary = getCountrySummary(year);
 
   const legendItems = ENERGY_SOURCES.map((src) => ({
     key: src,
@@ -248,12 +264,15 @@ export function TreemapChart() {
   return (
     <ResponsiveChartWrapper
       title="Voronoi Energy View"
+      description="Voronoi cells represent entities for the selected year and are colored by each entity's dominant energy source. Cell area is not a quantitative energy encoding. Use the year slider to change the view. Exact totals and dominant sources are available in the table below the chart."
       animationKey={year}
       controls={
         <div className="year-slider-container">
           <input
             type="range"
             className="year-slider"
+            aria-label="Year for Voronoi energy view"
+            aria-valuetext={String(year)}
             min={minYear}
             max={maxYear}
             value={year}
@@ -263,14 +282,44 @@ export function TreemapChart() {
         </div>
       }
       legend={<ChartLegend items={legendItems} />}
+      supplementary={
+        <details className="chart-data-details">
+          <summary>View Voronoi values for {year}</summary>
+          <div className="chart-data-table-wrapper">
+            <table className="chart-data-table">
+              <caption className="sr-only">
+                Voronoi energy values for {year}
+              </caption>
+              <thead>
+                <tr>
+                  <th scope="col">Entity</th>
+                  <th scope="col">Total energy (TWh)</th>
+                  <th scope="col">Dominant energy source</th>
+                </tr>
+              </thead>
+              <tbody>
+                {countrySummary.map((row) => (
+                  <tr key={row.country}>
+                    <th scope="row">{row.country}</th>
+                    <td>{row.total.toLocaleString()}</td>
+                    <td>{ENERGY_LABELS[row.dominantSource]}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </details>
+      }
     >
-      {({ width, height }) => (
+      {({ width, height, titleId, descriptionId }) => (
         <>
           <TreemapSVG
             width={width}
             height={height}
             year={year}
             onTooltip={handleTooltip}
+            titleId={titleId}
+            descriptionId={descriptionId}
           />
           {tooltip && (
             <ChartTooltip

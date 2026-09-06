@@ -75,7 +75,16 @@ function getLabelCountries(bubbleData) {
   return Object.values(largest); // Return list of largest countries per region.
 }
 
-function BubbleSVG({ width, height, year, isLog, onTooltip, rScale }) {
+function BubbleSVG({
+  width,
+  height,
+  year,
+  isLog,
+  onTooltip,
+  rScale,
+  titleId,
+  descriptionId,
+}) {
   const svgRef = useRef(null); // Reference to the SVG element in the DOM.
   const prefersReducedMotion = useReducedMotion(); // Check if user prefers reduced motion.
 
@@ -555,7 +564,15 @@ function BubbleSVG({ width, height, year, isLog, onTooltip, rScale }) {
       .on("mouseleave", () => onTooltip(null)); // Clear tooltip when mouse leaves a bubble
   }, [width, height, year, isLog, onTooltip, rScale, prefersReducedMotion]); // Re-run effect if any of these dependencies change.
 
-  return <svg ref={svgRef} width={width} height={height} />; // Render SVG element with specified dimensions and reference for D3 manipulations.
+  return (
+    <svg
+      ref={svgRef}
+      width={width}
+      height={height}
+      role="img"
+      aria-labelledby={`${titleId} ${descriptionId}`}
+    />
+  );
 }
 
 export function BubbleChart() {
@@ -565,6 +582,7 @@ export function BubbleChart() {
   const [tooltip, setTooltip] = useState(null); // State for managing tooltip content.
 
   const handleTooltip = useCallback((val) => setTooltip(val), []); // Memoized callback function to update tooltip state
+  const bubbleData = getBubbleData(year);
 
   // Generate legend items based on regional data.
   const legendItems = REGION_NAMES.map((name) => ({
@@ -576,6 +594,7 @@ export function BubbleChart() {
   return (
     <ResponsiveChartWrapper
       title="Energy vs Selected Renewables — by Region" // Set chart title.
+      description="Bubbles compare total primary energy on the horizontal axis with the combined share from solar, wind, biofuel, and other renewable sources on the vertical axis. Bubble size repeats total energy and color identifies region. Use the year slider and scale toggle to change the view. Exact values are available in the table below the chart."
       animationKey={`${year}-${isLog}`} // Unique key for managing transitions based on current year and scale type.
       controls={
         // Render control elements for user interaction:
@@ -584,6 +603,8 @@ export function BubbleChart() {
             <input
               type="range"
               className="year-slider" // Style class for the range input.
+              aria-label="Year for energy and selected renewables comparison"
+              aria-valuetext={String(year)}
               min={minYear} // Minimum year available in the dataset
               max={maxYear} // Maximum year available in the dataset.
               value={year} // Currently selected year.
@@ -592,7 +613,10 @@ export function BubbleChart() {
             <span className="year-label">{year}</span>
           </div>
           <button
+            type="button"
             className={`toggle-btn scale-toggle ${isLog ? "active" : ""}`} // Toggle button with conditional class based on 'isLog'.
+            aria-label="Use logarithmic energy scale"
+            aria-pressed={isLog}
             style={isLog ? { borderColor: cssVar("--accent") } : {}} // Conditional border color
             onClick={() => setIsLog((v) => !v)} // Toggle log/linear state.
           >
@@ -602,9 +626,38 @@ export function BubbleChart() {
         </div>
       }
       legend={<ChartLegend items={legendItems} />} // Render chart legend using 'ChartLegend' component and the generated legend items.
+      supplementary={
+        <details className="chart-data-details">
+          <summary>View bubble chart values for {year}</summary>
+          <div className="chart-data-table-wrapper">
+            <table className="chart-data-table">
+              <caption className="sr-only">
+                Bubble chart values for {year}
+              </caption>
+              <thead>
+                <tr>
+                  <th scope="col">Entity</th>
+                  <th scope="col">Total energy (TWh)</th>
+                  <th scope="col">Selected renewables (%)</th>
+                  <th scope="col">Region</th>
+                </tr>
+              </thead>
+              <tbody>
+                {bubbleData.map((row) => (
+                  <tr key={row.country}>
+                    <th scope="row">{row.country}</th>
+                    <td>{row.energy.toLocaleString()}</td>
+                    <td>{row.selectedRenewablesShare.toFixed(1)}</td>
+                    <td>{row.region}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </details>
+      }
     >
-      {({ width, height }) => {
-        const bubbleData = getBubbleData(year); // Get data for the current year to create bubbles.
+      {({ width, height, titleId, descriptionId }) => {
         const energyExtent = d3.extent(bubbleData, (d) => d.energy); // Calculate extent of 'energy' values
         // Define radius scale based on available chart dimensions and energy range data.
         const rScale = d3
@@ -621,6 +674,8 @@ export function BubbleChart() {
               isLog={isLog}
               onTooltip={handleTooltip}
               rScale={rScale}
+              titleId={titleId}
+              descriptionId={descriptionId}
             />
 
             {/* Bubble size legend removed per request; BubbleLegend component preserved in src/components/BubbleLegend.jsx */}

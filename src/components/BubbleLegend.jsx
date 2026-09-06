@@ -18,7 +18,6 @@ export function BubbleLegend({ scale, tickNumber = 4 }) {
     const yCircleCenter = diameter - scale(tick);
 
     return (
-      {/* Use `key` to uniquely identify each group in React */}
       <g key={i}>
         {/* Render a circle for the current tick value. The circle's center is at (xCenter,
 yCircleCenter) and has radius `scale(tick)`. */}
@@ -32,11 +31,11 @@ yCircleCenter) and has radius `scale(tick)`. */}
         {/* Render a dashed line below each circle as a label guide. */}
         <line
           x1={xCenter}
-          x2={xCenter + dashWidth} // Position end of the line to the right byt 'dashwidth'.
-          y1={yCircleTop} // Vertical positiona aliagns with the top of the circle.
+          x2={xCenter + dashWidth}
+          y1={yCircleTop}
           y2={yCircleTop}
-          stroke={textColor} // Use the same text color throughought for consistency.
-          strokeDasharray={"2,2"} // Create a dashed line pattern.
+          stroke={textColor}
+          strokeDasharray="2,2"
         />
 
         {/* Render the tick value as a label next to each dashed line. */}

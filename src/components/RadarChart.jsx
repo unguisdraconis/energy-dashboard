@@ -8,7 +8,16 @@ import { cssVar } from "../utils/cssVar";
 import { ENERGY_SOURCES, ENERGY_COLORS, ENERGY_LABELS } from "../colorPalette";
 import { getCountries, getCountryData, getYearRange } from "../data";
 /** ----- Radar Chart ----- */
-function RadarSVG({ width, height, country, year, isLog, onTooltip }) {
+function RadarSVG({
+  width,
+  height,
+  country,
+  year,
+  isLog,
+  onTooltip,
+  titleId,
+  descriptionId,
+}) {
   const svgRef = useRef(null);
   const prefersReducedMotion = useReducedMotion();
 
@@ -217,7 +226,15 @@ function RadarSVG({ width, height, country, year, isLog, onTooltip }) {
       .on("mouseleave", () => onTooltip(null));
   }, [width, height, country, year, isLog, onTooltip, prefersReducedMotion]);
 
-  return <svg ref={svgRef} width={width} height={height} />;
+  return (
+    <svg
+      ref={svgRef}
+      width={width}
+      height={height}
+      role="img"
+      aria-labelledby={`${titleId} ${descriptionId}`}
+    />
+  );
 }
 
 export function RadarChart() {
@@ -241,11 +258,13 @@ export function RadarChart() {
   return (
     <ResponsiveChartWrapper
       title="Country Energy Mix Radar"
+      description="The radar profile compares nine energy-source measurements for the selected entity and year. Use the entity selector, year slider, and logarithmic-scale toggle to change the profile. Axis labels and rings show the overall pattern; pointer hover shows exact values and shares."
       animationKey={`${country}-${year}-${isLog}`}
       controls={
         <>
           <select
             className="chart-select"
+            aria-label="Entity for energy mix radar"
             value={country}
             onChange={(e) => setCountry(e.target.value)}
           >
@@ -259,6 +278,8 @@ export function RadarChart() {
             <input
               type="range"
               className="year-slider"
+              aria-label="Year for energy mix radar"
+              aria-valuetext={String(year)}
               min={minYear}
               max={maxYear}
               value={year}
@@ -267,7 +288,10 @@ export function RadarChart() {
             <span className="year-label">{year}</span>
           </div>
           <button
+            type="button"
             className={`toggle-btn scale-toggle ${isLog ? "active" : ""}`}
+            aria-label="Use logarithmic energy scale"
+            aria-pressed={isLog}
             style={isLog ? { borderColor: cssVar("--accent") } : {}}
             onClick={() => setIsLog((v) => !v)}
           >
@@ -277,7 +301,7 @@ export function RadarChart() {
       }
       legend={<ChartLegend items={legendItems} />}
     >
-      {({ width, height }) => (
+      {({ width, height, titleId, descriptionId }) => (
         <>
           <RadarSVG
             width={width}
@@ -286,6 +310,8 @@ export function RadarChart() {
             year={year}
             isLog={isLog}
             onTooltip={handleTooltip}
+            titleId={titleId}
+            descriptionId={descriptionId}
           />
           {tooltip && (
             <ChartTooltip
