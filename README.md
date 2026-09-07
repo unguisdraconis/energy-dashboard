@@ -6,6 +6,8 @@ Energy Dashboard began as a **D3 Loves React** learning exercise and was deliber
 
 [Explore the Global Energy Dashboard](https://unguisdraconis.github.io/energy-dashboard/)
 
+![Interactive dashboard with six modular charts for exploring historical energy data.](docs/images/energy-dashboard.png)
+
 ## Project goals
 
 Jeremiah used the project to experiment with modular visualization architecture: shared responsive layout, controls, legends, tooltips, color tokens, and chart modules that can be recomposed around a bundled dataset. A design goal was to make chart or dataset substitution require only a small number of composition-level changes, while keeping chart-specific transformations and interaction logic within each module.
